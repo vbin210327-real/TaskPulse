@@ -99,31 +99,29 @@ class TaskManager: ObservableObject {
             return false
         }
         
-        // Ensure we're on the main thread
+        // Get the actual task
+        let actualTask = tasks[taskIndex]
+        let wasTaskCompleted = actualTask.completed
+        
+        // Toggle subtask completion immediately
+        actualTask.subtasks[subtaskIndex].completed.toggle()
+        
+        // Check if all subtasks are completed
+        let allSubtasksCompleted = actualTask.subtasks.allSatisfy { $0.completed }
+        let willCompleteParentTask = allSubtasksCompleted && !wasTaskCompleted
+        
+        // Update parent task completion status
+        if allSubtasksCompleted && !actualTask.completed {
+            // Complete the parent task
+            actualTask.completed = true
+        } else if !allSubtasksCompleted && actualTask.completed {
+            // If not all subtasks are completed but parent is, uncomplete the parent
+            actualTask.completed = false
+        }
+        
+        // Ensure we're on the main thread for UI updates
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
-            
-            // Double-check the indices are still valid
-            guard taskIndex < self.tasks.count,
-                  subtaskIndex < self.tasks[taskIndex].subtasks.count else { return }
-            
-            // Get the actual task and subtask
-            let actualTask = self.tasks[taskIndex]
-            
-            // Toggle subtask completion
-            actualTask.subtasks[subtaskIndex].completed.toggle()
-            
-            // Check if all subtasks are completed
-            let allSubtasksCompleted = actualTask.subtasks.allSatisfy { $0.completed }
-            let wasTaskCompleted = actualTask.completed
-            
-            if allSubtasksCompleted && !actualTask.completed {
-                // Complete the parent task
-                actualTask.completed = true
-            } else if !allSubtasksCompleted && actualTask.completed {
-                // If not all subtasks are completed but parent is, uncomplete the parent
-                actualTask.completed = false
-            }
             
             // Trigger change notifications
             actualTask.objectWillChange.send()
@@ -133,13 +131,8 @@ class TaskManager: ObservableObject {
             self.tasks[taskIndex] = actualTask
         }
         
-        // Return synchronously based on current state for UI logic
-        let allSubtasksCompleted = tasks[taskIndex].subtasks.allSatisfy { $0.completed }
-        if allSubtasksCompleted && !tasks[taskIndex].completed {
-            return true // Indicates parent task will be completed
-        }
-        
-        return false
+        // Return if parent task was just completed by subtask completion
+        return willCompleteParentTask
     }
 
     private func saveTasks() {

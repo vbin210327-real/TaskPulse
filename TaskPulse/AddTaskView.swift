@@ -171,17 +171,29 @@ struct AddTaskView: View {
     
     // MARK: - Functions
     private func saveTask() {
+        // 保存最后输入的子任务（如果有的话）
         if !newSubtaskTitle.isEmpty {
             subtasks.append(Subtask(title: newSubtaskTitle))
+            newSubtaskTitle = "" // 清空输入框
         }
+        
+        // 移除空的子任务
+        subtasks.removeAll { $0.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        
         let finalDescription = description.isEmpty ? nil : description
-        taskManager.addTask(
+        
+        // 创建新任务并包含子任务
+        let newTask = Task(
             title: title,
             description: finalDescription,
             dueDate: dueDate,
-            hasTime: dueDateHasTime,
-            priority: priority
+            dueDateHasTime: dueDateHasTime,
+            priority: priority,
+            subtasks: subtasks
         )
+        
+        // 添加到任务管理器
+        taskManager.tasks.append(newTask)
         
         // Dismiss the view
         dismiss()

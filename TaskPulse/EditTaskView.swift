@@ -159,8 +159,15 @@ struct EditTaskView: View {
     
     // MARK: - Functions
     private func saveTask() {
+        // 保存最后输入的子任务（如果有的话）
+        if !newSubtaskTitle.isEmpty {
+            subtasks.append(Subtask(title: newSubtaskTitle))
+            newSubtaskTitle = "" // 清空输入框
+        }
+        
         let finalDescription = description.isEmpty ? nil : description
-        subtasks.removeAll { $0.title.isEmpty }
+        // 移除空的子任务
+        subtasks.removeAll { $0.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
         
         // Create an updated task instance
         let updatedTask = Task(id: task.id, title: title, description: finalDescription, dueDate: dueDate, dueDateHasTime: dueDateHasTime, priority: priority, subtasks: subtasks, completed: task.completed)
