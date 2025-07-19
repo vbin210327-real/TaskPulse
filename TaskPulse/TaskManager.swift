@@ -22,7 +22,7 @@ class TaskManager: ObservableObject {
     
     // Filter states
     @Published var filterPriority: Priority? = nil
-    @Published var filterStatus: FilterView.TaskStatus? = .all
+    @Published var filterStatus: FilterView.TaskStatus? = .inProgress
     @Published var filterStartDate: Date? = nil
     @Published var filterEndDate: Date? = nil
 

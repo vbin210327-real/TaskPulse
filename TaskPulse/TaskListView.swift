@@ -49,7 +49,7 @@ struct TaskListView: View {
         }
 
         switch activeFilter {
-        case .none, .some(.all):
+        case .none:
             break
         case .some(.completed):
             tasksToFilter = tasksToFilter.filter { $0.completed }

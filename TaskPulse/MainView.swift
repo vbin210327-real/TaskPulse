@@ -57,8 +57,12 @@ struct MainView: View {
                         taskToAnimate: $taskToAnimate,
                         taskManager: taskManager,
                         onCompletion: {
-                            withAnimation {
-                                taskManager.toggleCompletion(for: task)
+                            // 只有当任务还未完成时才切换状态
+                            // 如果任务已经被子任务完成触发，就不需要再次切换
+                            if !task.completed {
+                                withAnimation {
+                                    taskManager.toggleCompletion(for: task)
+                                }
                             }
                         }
                     )

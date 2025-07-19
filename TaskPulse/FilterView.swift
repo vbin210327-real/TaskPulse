@@ -15,7 +15,6 @@ struct FilterView: View {
     @State private var localStatus: TaskStatus?
     
     enum TaskStatus: String, CaseIterable {
-        case all = "全部状态"
         case completed = "已完成"
         case inProgress = "进行中"
         case overdue = "逾期"
@@ -32,7 +31,6 @@ struct FilterView: View {
                         }
                     }
                     Picker("状态", selection: $localStatus) {
-                        Text("全部状态").tag(TaskStatus?(nil))
                         ForEach(TaskStatus.allCases, id: \.self) { s in
                             Text(s.rawValue).tag(TaskStatus?(s))
                         }
