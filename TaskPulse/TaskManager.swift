@@ -99,19 +99,46 @@ class TaskManager: ObservableObject {
             return false
         }
         
-        tasks[taskIndex].subtasks[subtaskIndex].completed.toggle()
-
-        let allSubtasksCompleted = tasks[taskIndex].subtasks.allSatisfy { $0.completed }
-        if allSubtasksCompleted {
-            if !tasks[taskIndex].completed {
-                tasks[taskIndex].completed = true
-                return true // Indicates parent task was just completed
+        // Ensure we're on the main thread
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            
+            // Double-check the indices are still valid
+            guard taskIndex < self.tasks.count,
+                  subtaskIndex < self.tasks[taskIndex].subtasks.count else { return }
+            
+            // Get the actual task and subtask
+            let actualTask = self.tasks[taskIndex]
+            
+            // Toggle subtask completion
+            actualTask.subtasks[subtaskIndex].completed.toggle()
+            
+            // Check if all subtasks are completed
+            let allSubtasksCompleted = actualTask.subtasks.allSatisfy { $0.completed }
+            let wasTaskCompleted = actualTask.completed
+            
+            if allSubtasksCompleted && !actualTask.completed {
+                // Complete the parent task
+                actualTask.completed = true
+            } else if !allSubtasksCompleted && actualTask.completed {
+                // If not all subtasks are completed but parent is, uncomplete the parent
+                actualTask.completed = false
             }
-        } else {
-            if tasks[taskIndex].completed {
-                tasks[taskIndex].completed = false
-            }
+            
+            // Trigger change notifications
+            actualTask.objectWillChange.send()
+            self.objectWillChange.send()
+            
+            // Force array update to trigger @Published
+            self.tasks[taskIndex] = actualTask
         }
+        
+        // Return synchronously based on current state for UI logic
+        let allSubtasksCompleted = tasks[taskIndex].subtasks.allSatisfy { $0.completed }
+        if allSubtasksCompleted && !tasks[taskIndex].completed {
+            return true // Indicates parent task will be completed
+        }
+        
         return false
     }
 

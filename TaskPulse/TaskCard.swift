@@ -127,9 +127,9 @@ struct TaskCard: View {
                     .font(.caption2)
                     .foregroundColor(.secondary)
                 
-                // 使用DNA螺旋进度条，水平交叉环绕版本
+                // 使用DNA螺旋进度条，拉长到卡片尽头
                 MiniDNAProgressView(progress: task.progress)
-                    .frame(width: 120, height: 20)
+                    .frame(height: 12) // 变细
                 
                 Text("\(Int(task.progress * 100))%")
                     .font(.caption2)
@@ -241,7 +241,7 @@ struct MiniDNASegmentView: View {
     let rotation: Double
     let glowPulse: Double
     
-    private let helixHeight: CGFloat = 8 // 水平螺旋的高度
+    private let helixHeight: CGFloat = 4 // 水平螺旋的高度，变细
     
     var body: some View {
         ZStack {
@@ -277,14 +277,14 @@ struct MiniDNASegmentView: View {
                         endRadius: 3
                     )
                 )
-                .frame(width: isCompleted ? 4 : 3, height: isCompleted ? 4 : 3)
+                .frame(width: isCompleted ? 3 : 2, height: isCompleted ? 3 : 2)
                 .scaleEffect(isCompleted ? (1.0 + 0.2 * glowPulse) : 1.0)
             
             if isCompleted {
                 Circle()
                     .fill(Color.cyan.opacity(0.4))
-                    .frame(width: 6, height: 6)
-                    .blur(radius: 1)
+                    .frame(width: 4, height: 4)
+                    .blur(radius: 0.5)
                     .scaleEffect(0.8 + 0.3 * glowPulse)
             }
         }
@@ -311,14 +311,14 @@ struct MiniDNASegmentView: View {
                         endRadius: 3
                     )
                 )
-                .frame(width: isCompleted ? 4 : 3, height: isCompleted ? 4 : 3)
+                .frame(width: isCompleted ? 3 : 2, height: isCompleted ? 3 : 2)
                 .scaleEffect(isCompleted ? (1.0 + 0.2 * glowPulse) : 1.0)
             
             if isCompleted {
                 Circle()
                     .fill(Color.blue.opacity(0.4))
-                    .frame(width: 6, height: 6)
-                    .blur(radius: 1)
+                    .frame(width: 4, height: 4)
+                    .blur(radius: 0.5)
                     .scaleEffect(0.8 + 0.3 * glowPulse)
             }
         }
@@ -346,7 +346,7 @@ struct MiniDNASegmentView: View {
                     endPoint: .bottom
                 )
             )
-            .frame(width: isCompleted ? 1.5 : 0.8, height: max(bridgeHeight, 1))
+            .frame(width: isCompleted ? 1 : 0.5, height: max(bridgeHeight, 0.5))
             .offset(y: (y1 + y2) / 2)
             .shadow(
                 color: isCompleted ? Color.white : Color.clear,
@@ -361,7 +361,7 @@ struct MiniDNASegmentView: View {
         
         return Circle()
             .fill(Color.white)
-            .frame(width: 2, height: 2)
+            .frame(width: 1.5, height: 1.5)
             .offset(y: y)
             .opacity(0.6 + 0.4 * glowPulse)
             .shadow(color: Color.white, radius: 1)
