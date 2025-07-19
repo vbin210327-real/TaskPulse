@@ -8,6 +8,7 @@ import SwiftUI
 struct CompletionEffect: View {
     let task: Task
     @Binding var taskToAnimate: Task?
+    @ObservedObject var taskManager: TaskManager
     var onCompletion: () -> Void // Add a callback for when the animation finishes
 
     // Animation states
@@ -20,13 +21,14 @@ struct CompletionEffect: View {
         ZStack {
             Color.black.opacity(0.95).edgesIgnoringSafeArea(.all)
 
-            if let task = taskToAnimate, task.id == self.task.id {
+            if let animatingTask = taskToAnimate, animatingTask.id == self.task.id,
+               let currentTask = taskManager.tasks.first(where: { $0.id == animatingTask.id }) {
                 VStack {
                     Spacer()
                     
                     GeometryReader { geo in
                         ZStack {
-                            let cardView = TaskCard(task: task)
+                            let cardView = TaskCard(task: currentTask)
                                 .frame(width: geo.size.width, height: geo.size.height)
                                 .foregroundColor(.white)
                             
@@ -153,6 +155,7 @@ struct BottomLeftPiece: Shape {
 struct CompletionEffect_Previews: PreviewProvider {
     static var previews: some View {
         let task = Task(title: "Preview Task", description: "A task for previewing.", dueDate: Date(), priority: .medium)
-        CompletionEffect(task: task, taskToAnimate: .constant(task), onCompletion: {})
+        let taskManager = TaskManager()
+        CompletionEffect(task: task, taskToAnimate: .constant(task), taskManager: taskManager, onCompletion: {})
     }
 } 

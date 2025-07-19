@@ -55,8 +55,11 @@ struct MainView: View {
                     CompletionEffect(
                         task: task,
                         taskToAnimate: $taskToAnimate,
+                        taskManager: taskManager,
                         onCompletion: {
-                            taskManager.toggleCompletion(for: task)
+                            withAnimation {
+                                taskManager.toggleCompletion(for: task)
+                            }
                         }
                     )
                 }
@@ -76,8 +79,11 @@ struct MainView: View {
                                 CompletionEffect(
                                     task: task,
                                     taskToAnimate: $taskToAnimate,
+                                    taskManager: taskManager,
                                     onCompletion: {
-                                        taskManager.toggleCompletion(for: task)
+                                        withAnimation {
+                                            taskManager.toggleCompletion(for: task)
+                                        }
                                     }
                                 )
                             }

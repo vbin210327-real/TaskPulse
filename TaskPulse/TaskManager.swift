@@ -64,20 +64,33 @@ class TaskManager: ObservableObject {
     func toggleCompletion(for task: Task) {
         guard let index = tasks.firstIndex(where: { $0.id == task.id }) else { return }
         
-        // Directly modify the task to ensure immediate UI updates
-        withAnimation {
-            tasks[index].completed.toggle()
+        // Ensure we're on the main thread
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            
+            // Double-check the index is still valid
+            guard index < self.tasks.count, self.tasks[index].id == task.id else { return }
+            
+            // Get the actual task from the array (not the parameter)
+            let actualTask = self.tasks[index]
+            
+            // Directly modify the task properties to trigger @Published
+            actualTask.completed.toggle()
             
             // Also update subtasks if the parent task is marked as complete
-            if tasks[index].completed {
-                for i in tasks[index].subtasks.indices {
-                    tasks[index].subtasks[i].completed = true
+            if actualTask.completed {
+                for i in actualTask.subtasks.indices {
+                    actualTask.subtasks[i].completed = true
                 }
             }
+            
+            // Manually trigger change notifications
+            actualTask.objectWillChange.send()
+            self.objectWillChange.send()
+            
+            // Force array update by reassigning the same object to trigger @Published
+            self.tasks[index] = actualTask
         }
-        
-        // Force an immediate update to ensure all observers are notified
-        objectWillChange.send()
     }
 
     func toggleSubtaskCompletion(taskId: UUID, subtaskId: UUID) -> Bool {
