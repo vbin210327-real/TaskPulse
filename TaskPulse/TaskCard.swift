@@ -127,9 +127,9 @@ struct TaskCard: View {
                     .font(.caption2)
                     .foregroundColor(.secondary)
                 
-                // 使用DNA螺旋进度条，拉长到卡片尽头
-                MiniDNAProgressView(progress: task.progress)
-                    .frame(height: 12) // 变细
+                // 使用常规进度条，色相随进度变化
+                ColorfulProgressView(progress: task.progress)
+                    .frame(height: 8)
                 
                 Text("\(Int(task.progress * 100))%")
                     .font(.caption2)
@@ -186,187 +186,45 @@ extension Priority {
     }
 }
 
-struct MiniDNAProgressView: View {
+struct ColorfulProgressView: View {
     let progress: Double
-    @State private var rotation: Double = 0
-    @State private var glowPulse: Double = 0.5
     
-    private let segments = 15 // 更多段数用于水平布局
+    // 根据进度计算色相值 (0.0 = 红色, 0.33 = 绿色, 0.66 = 蓝色)
+    private var progressColor: Color {
+        let hue = progress * 0.33 // 从红色(0)到绿色(0.33)
+        return Color(hue: hue, saturation: 0.8, brightness: 0.9)
+    }
     
     var body: some View {
         GeometryReader { geometry in
-            let width = geometry.size.width
-            let segmentWidth = width / CGFloat(segments)
-            
-            ZStack {
-                // 背景微星效果
-                ForEach(0..<8, id: \.self) { _ in
-                    Circle()
-                        .fill(Color.white.opacity(Double.random(in: 0.1...0.3)))
-                        .frame(width: 1, height: 1)
-                        .position(
-                            x: Double.random(in: 0...geometry.size.width),
-                            y: Double.random(in: 0...geometry.size.height)
-                        )
-                }
+            ZStack(alignment: .leading) {
+                // 背景轨道
+                RoundedRectangle(cornerRadius: geometry.size.height / 2)
+                    .fill(Color.gray.opacity(0.2))
+                    .frame(width: geometry.size.width, height: geometry.size.height)
                 
-                ForEach(0..<segments, id: \.self) { index in
-                    let segmentProgress = Double(index) / Double(segments - 1)
-                    let isCompleted = segmentProgress <= progress
-                    
-                    MiniDNASegmentView(
-                        segmentProgress: segmentProgress,
-                        isCompleted: isCompleted,
-                        rotation: rotation,
-                        glowPulse: glowPulse
+                // 进度条
+                RoundedRectangle(cornerRadius: geometry.size.height / 2)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                progressColor.opacity(0.8),
+                                progressColor,
+                                progressColor.opacity(0.9)
+                            ],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
                     )
-                    .offset(x: CGFloat(index) * segmentWidth - width/2 + segmentWidth/2)
-                }
-            }
-        }
-        .onAppear {
-            withAnimation(.linear(duration: 8).repeatForever(autoreverses: false)) {
-                rotation = 360
-            }
-            withAnimation(.easeInOut(duration: 3).repeatForever(autoreverses: true)) {
-                glowPulse = 1.0
+                    .frame(width: geometry.size.width * progress, height: geometry.size.height)
+                    .shadow(color: progressColor.opacity(0.4), radius: 2, x: 0, y: 1)
+                    .animation(.easeInOut(duration: 0.3), value: progress)
             }
         }
     }
 }
 
-struct MiniDNASegmentView: View {
-    let segmentProgress: Double
-    let isCompleted: Bool
-    let rotation: Double
-    let glowPulse: Double
-    
-    private let helixHeight: CGFloat = 4 // 水平螺旋的高度，变细
-    
-    var body: some View {
-        ZStack {
-            // 上螺旋链（水平交叉）
-            topHelix
-            
-            // 下螺旋链（水平交叉）
-            bottomHelix
-            
-            // 连接桥梁
-            connectionBridge
-            
-            // 发光粒子（仅完成部分）
-            if isCompleted {
-                glowingParticle
-            }
-        }
-    }
-    
-    private var topHelix: some View {
-        let angle = segmentProgress * 720 + rotation // 水平螺旋波动
-        let y = helixHeight * sin(angle * .pi / 180) // 垂直波动
-        
-        return ZStack {
-            Circle()
-                .fill(
-                    RadialGradient(
-                        colors: isCompleted ? 
-                        [Color.cyan, Color.blue.opacity(0.3)] :
-                        [Color.gray.opacity(0.2), Color.clear],
-                        center: .center,
-                        startRadius: 1,
-                        endRadius: 3
-                    )
-                )
-                .frame(width: isCompleted ? 3 : 2, height: isCompleted ? 3 : 2)
-                .scaleEffect(isCompleted ? (1.0 + 0.2 * glowPulse) : 1.0)
-            
-            if isCompleted {
-                Circle()
-                    .fill(Color.cyan.opacity(0.4))
-                    .frame(width: 4, height: 4)
-                    .blur(radius: 0.5)
-                    .scaleEffect(0.8 + 0.3 * glowPulse)
-            }
-        }
-        .offset(y: y)
-        .shadow(
-            color: isCompleted ? Color.cyan : Color.clear,
-            radius: isCompleted ? (2 + glowPulse) : 0
-        )
-    }
-    
-    private var bottomHelix: some View {
-        let angle = segmentProgress * 720 + rotation + 180 // 相位差180度
-        let y = helixHeight * sin(angle * .pi / 180) // 垂直波动
-        
-        return ZStack {
-            Circle()
-                .fill(
-                    RadialGradient(
-                        colors: isCompleted ? 
-                        [Color.blue, Color.purple.opacity(0.3)] :
-                        [Color.gray.opacity(0.2), Color.clear],
-                        center: .center,
-                        startRadius: 1,
-                        endRadius: 3
-                    )
-                )
-                .frame(width: isCompleted ? 3 : 2, height: isCompleted ? 3 : 2)
-                .scaleEffect(isCompleted ? (1.0 + 0.2 * glowPulse) : 1.0)
-            
-            if isCompleted {
-                Circle()
-                    .fill(Color.blue.opacity(0.4))
-                    .frame(width: 4, height: 4)
-                    .blur(radius: 0.5)
-                    .scaleEffect(0.8 + 0.3 * glowPulse)
-            }
-        }
-        .offset(y: y)
-        .shadow(
-            color: isCompleted ? Color.blue : Color.clear,
-            radius: isCompleted ? (2 + glowPulse) : 0
-        )
-    }
-    
-    private var connectionBridge: some View {
-        let angle1 = segmentProgress * 720 + rotation
-        let angle2 = segmentProgress * 720 + rotation + 180
-        let y1 = helixHeight * sin(angle1 * .pi / 180)
-        let y2 = helixHeight * sin(angle2 * .pi / 180)
-        let bridgeHeight = abs(y2 - y1)
-        
-        return Rectangle()
-            .fill(
-                LinearGradient(
-                    colors: isCompleted ? 
-                    [Color.cyan.opacity(0.6), Color.white.opacity(0.8), Color.blue.opacity(0.6)] :
-                    [Color.gray.opacity(0.2)],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-            )
-            .frame(width: isCompleted ? 1 : 0.5, height: max(bridgeHeight, 0.5))
-            .offset(y: (y1 + y2) / 2)
-            .shadow(
-                color: isCompleted ? Color.white : Color.clear,
-                radius: isCompleted ? (1 + 0.5 * glowPulse) : 0
-            )
-            .scaleEffect(x: isCompleted ? (1.0 + 0.3 * glowPulse) : 1.0)
-    }
-    
-    private var glowingParticle: some View {
-        let angle = segmentProgress * 720 + rotation * 3
-        let y = helixHeight * 0.5 * sin(angle * .pi / 180)
-        
-        return Circle()
-            .fill(Color.white)
-            .frame(width: 1.5, height: 1.5)
-            .offset(y: y)
-            .opacity(0.6 + 0.4 * glowPulse)
-            .shadow(color: Color.white, radius: 1)
-    }
-}
+
 
 #Preview {
     TaskCard(task: Task(title: "示例任务", description: "任务描述", dueDate: Date(), priority: .high, completed: false))
