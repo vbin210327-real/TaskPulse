@@ -10,15 +10,16 @@ import SwiftUI
 struct DNAProgressView: View {
     let progress: Double
     @State private var rotation: Double = 0
-    @State private var particleAnimation: Double = 0
+    @State private var glowPulse: Double = 0.5
+    @State private var particleFlow: Double = 0
     
-    private let segments = 20
-    private let glowColor = Color.cyan
-    private let completedColor = Color.green
-    private let incompleteColor = Color.gray
+    private let segments = 25
+    private let primaryGlow = Color.cyan
+    private let secondaryGlow = Color.blue
+    private let tertiaryGlow = Color.white
     
     var body: some View {
-        VStack {
+        VStack(spacing: 20) {
             Text("任务进度")
                 .font(.headline)
                 .foregroundColor(.primary)
@@ -26,155 +27,313 @@ struct DNAProgressView: View {
             GeometryReader { geometry in
                 let width = geometry.size.width
                 let height = geometry.size.height
-                let segmentHeight = height / CGFloat(segments)
                 
                 ZStack {
-                    // DNA双螺旋链
-                    ForEach(0..<segments, id: \.self) { index in
-                        let segmentProgress = Double(index) / Double(segments - 1)
-                        let isCompleted = segmentProgress <= progress
-                        
-                        DNASegmentView(
-                            segmentProgress: segmentProgress,
-                            segmentHeight: segmentHeight,
-                            width: width,
-                            isCompleted: isCompleted,
-                            rotation: rotation,
-                            particleAnimation: particleAnimation
-                        )
-                        .offset(y: CGFloat(index) * segmentHeight - height/2 + segmentHeight/2)
-                    }
+                    // 背景星空效果
+                    backgroundStars
                     
-                    // 进度百分比
-                    VStack {
-                        Spacer()
-                        Text("\(Int(progress * 100))%")
-                            .font(.title2)
-                            .fontWeight(.bold)
-                            .foregroundColor(.primary)
-                            .padding()
-                            .background(Color.black.opacity(0.7))
-                            .cornerRadius(10)
-                    }
+                    // DNA螺旋主体
+                    dnaHelixView(width: width, height: height)
+                    
+                    // 进度百分比显示
+                    progressLabel
                 }
             }
-            .frame(height: 300)
+            .frame(height: 350)
+            .background(
+                RadialGradient(
+                    colors: [
+                        Color.black.opacity(0.1),
+                        Color.black.opacity(0.8)
+                    ],
+                    center: .center,
+                    startRadius: 50,
+                    endRadius: 200
+                )
+            )
+            .cornerRadius(20)
             .onAppear {
                 startAnimations()
             }
         }
     }
     
+    private var backgroundStars: some View {
+        ForEach(0..<30, id: \.self) { _ in
+            Circle()
+                .fill(Color.white.opacity(Double.random(in: 0.1...0.6)))
+                .frame(width: Double.random(in: 1...3), height: Double.random(in: 1...3))
+                .position(
+                    x: Double.random(in: 0...300),
+                    y: Double.random(in: 0...350)
+                )
+                .animation(
+                    .easeInOut(duration: Double.random(in: 2...4))
+                    .repeatForever(autoreverses: true),
+                    value: glowPulse
+                )
+        }
+    }
+    
+    private func dnaHelixView(width: CGFloat, height: CGFloat) -> some View {
+        let segmentHeight = height / CGFloat(segments)
+        
+        return ZStack {
+            ForEach(0..<segments, id: \.self) { index in
+                let segmentProgress = Double(index) / Double(segments - 1)
+                let isCompleted = segmentProgress <= progress
+                
+                DNASegmentView(
+                    segmentProgress: segmentProgress,
+                    isCompleted: isCompleted,
+                    rotation: rotation,
+                    glowPulse: glowPulse,
+                    particleFlow: particleFlow,
+                    width: width
+                )
+                .offset(y: CGFloat(index) * segmentHeight - height/2 + segmentHeight/2)
+            }
+        }
+    }
+    
+    private var progressLabel: some View {
+        VStack {
+            Spacer()
+            Text("\(Int(progress * 100))%")
+                .font(.title2)
+                .fontWeight(.bold)
+                .foregroundColor(.white)
+                .shadow(color: primaryGlow, radius: 10)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 10)
+                .background(
+                    RoundedRectangle(cornerRadius: 15)
+                        .fill(Color.black.opacity(0.7))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 15)
+                                .stroke(primaryGlow.opacity(0.5), lineWidth: 1)
+                        )
+                )
+                .scaleEffect(0.9 + 0.1 * glowPulse)
+        }
+        .padding(.bottom, 20)
+    }
+    
     private func startAnimations() {
-        // 持续旋转动画
-        withAnimation(.linear(duration: 8).repeatForever(autoreverses: false)) {
+        // 主旋转动画
+        withAnimation(.linear(duration: 12).repeatForever(autoreverses: false)) {
             rotation = 360
         }
         
-        // 粒子流动动画
-        withAnimation(.easeInOut(duration: 2).repeatForever(autoreverses: true)) {
-            particleAnimation = 1.0
+        // 发光脉动效果
+        withAnimation(.easeInOut(duration: 3).repeatForever(autoreverses: true)) {
+            glowPulse = 1.0
+        }
+        
+        // 粒子流动效果
+        withAnimation(.linear(duration: 4).repeatForever(autoreverses: false)) {
+            particleFlow = 1.0
         }
     }
 }
 
 struct DNASegmentView: View {
     let segmentProgress: Double
-    let segmentHeight: CGFloat
-    let width: CGFloat
     let isCompleted: Bool
     let rotation: Double
-    let particleAnimation: Double
+    let glowPulse: Double
+    let particleFlow: Double
+    let width: CGFloat
     
-    private let spiralRadius: CGFloat = 30
+    private let helixRadius: CGFloat = 40
     
     var body: some View {
         ZStack {
-            // 左螺旋链
-            leftSpiral
+            // 主螺旋链条
+            leftHelixChain
+            rightHelixChain
             
-            // 右螺旋链
-            rightSpiral
+            // 连接桥梁
+            connectionBridge
             
-            // 连接梯子
-            connectionLadder
-            
-            // 粒子效果（仅在已完成部分）
+            // 发光粒子效果
             if isCompleted {
-                particleEffects
+                glowingParticles
+            }
+            
+            // 能量脉冲效果
+            if isCompleted {
+                energyPulse
             }
         }
         .rotation3DEffect(
-            .degrees(rotation),
+            .degrees(rotation * 0.3),
             axis: (x: 0, y: 1, z: 0)
         )
     }
     
-    private var leftSpiral: some View {
-        let angle = segmentProgress * 360 * 2 // 2圈螺旋
-        let x = spiralRadius * cos(angle * .pi / 180)
+    private var leftHelixChain: some View {
+        let angle = segmentProgress * 720 // 2圈完整螺旋
+        let x = helixRadius * cos(angle * .pi / 180)
+        let z = sin(angle * .pi / 180) * 10 // 3D深度效果
         
-        return Circle()
-            .fill(isCompleted ? Color.green : Color.gray.opacity(0.3))
-            .frame(width: 8, height: 8)
-            .offset(x: x)
-            .shadow(color: isCompleted ? .green : .clear, radius: isCompleted ? 4 : 0)
-            .scaleEffect(isCompleted ? 1.2 : 1.0)
-            .animation(.easeInOut(duration: 0.5), value: isCompleted)
+        return ZStack {
+            // 主要发光核心
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: isCompleted ? 
+                        [Color.cyan, Color.blue.opacity(0.3)] :
+                        [Color.gray.opacity(0.2), Color.clear],
+                        center: .center,
+                        startRadius: 2,
+                        endRadius: 8
+                    )
+                )
+                .frame(width: 12, height: 12)
+                .scaleEffect(isCompleted ? (1.0 + 0.3 * glowPulse) : 0.6)
+            
+            // 外层光晕
+            if isCompleted {
+                Circle()
+                    .fill(Color.cyan.opacity(0.3))
+                    .frame(width: 20, height: 20)
+                    .blur(radius: 4)
+                    .scaleEffect(0.8 + 0.4 * glowPulse)
+            }
+        }
+        .offset(x: x)
+        .shadow(
+            color: isCompleted ? Color.cyan : Color.clear,
+            radius: isCompleted ? (8 + 4 * glowPulse) : 0
+        )
+        .animation(.easeInOut(duration: 0.8), value: isCompleted)
     }
     
-    private var rightSpiral: some View {
-        let angle = segmentProgress * 360 * 2 + 180 // 相位差180度
-        let x = spiralRadius * cos(angle * .pi / 180)
+    private var rightHelixChain: some View {
+        let angle = segmentProgress * 720 + 180 // 相位差180度
+        let x = helixRadius * cos(angle * .pi / 180)
         
-        return Circle()
-            .fill(isCompleted ? Color.blue : Color.gray.opacity(0.3))
-            .frame(width: 8, height: 8)
-            .offset(x: x)
-            .shadow(color: isCompleted ? .blue : .clear, radius: isCompleted ? 4 : 0)
-            .scaleEffect(isCompleted ? 1.2 : 1.0)
-            .animation(.easeInOut(duration: 0.5), value: isCompleted)
+        return ZStack {
+            // 主要发光核心
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: isCompleted ? 
+                        [Color.blue, Color.purple.opacity(0.3)] :
+                        [Color.gray.opacity(0.2), Color.clear],
+                        center: .center,
+                        startRadius: 2,
+                        endRadius: 8
+                    )
+                )
+                .frame(width: 12, height: 12)
+                .scaleEffect(isCompleted ? (1.0 + 0.3 * glowPulse) : 0.6)
+            
+            // 外层光晕
+            if isCompleted {
+                Circle()
+                    .fill(Color.blue.opacity(0.3))
+                    .frame(width: 20, height: 20)
+                    .blur(radius: 4)
+                    .scaleEffect(0.8 + 0.4 * glowPulse)
+            }
+        }
+        .offset(x: x)
+        .shadow(
+            color: isCompleted ? Color.blue : Color.clear,
+            radius: isCompleted ? (8 + 4 * glowPulse) : 0
+        )
+        .animation(.easeInOut(duration: 0.8), value: isCompleted)
     }
     
-    private var connectionLadder: some View {
-        let angle = segmentProgress * 360 * 2
-        let leftX = spiralRadius * cos(angle * .pi / 180)
-        let rightX = spiralRadius * cos((angle + 180) * .pi / 180)
+    private var connectionBridge: some View {
+        let angle = segmentProgress * 720
+        let leftX = helixRadius * cos(angle * .pi / 180)
+        let rightX = helixRadius * cos((angle + 180) * .pi / 180)
+        let bridgeWidth = abs(rightX - leftX)
         
         return Rectangle()
-            .fill(isCompleted ? 
-                  LinearGradient(colors: [.green, .blue], startPoint: .leading, endPoint: .trailing) :
-                  LinearGradient(colors: [.gray.opacity(0.3)], startPoint: .leading, endPoint: .trailing)
+            .fill(
+                LinearGradient(
+                    colors: isCompleted ? 
+                    [
+                        Color.cyan.opacity(0.8),
+                        Color.white.opacity(0.9),
+                        Color.blue.opacity(0.8)
+                    ] :
+                    [Color.gray.opacity(0.1)],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
             )
-            .frame(width: abs(rightX - leftX), height: 2)
+            .frame(width: bridgeWidth, height: isCompleted ? 3 : 1)
             .offset(x: (leftX + rightX) / 2)
-            .shadow(color: isCompleted ? .cyan : .clear, radius: isCompleted ? 2 : 0)
-            .opacity(isCompleted ? 1.0 : 0.3)
-            .animation(.easeInOut(duration: 0.5), value: isCompleted)
+            .shadow(
+                color: isCompleted ? Color.white : Color.clear,
+                radius: isCompleted ? (4 + 2 * glowPulse) : 0
+            )
+            .scaleEffect(y: isCompleted ? (1.0 + 0.5 * glowPulse) : 1.0)
+            .animation(.easeInOut(duration: 0.8), value: isCompleted)
     }
     
-    private var particleEffects: some View {
-        ForEach(0..<3, id: \.self) { particleIndex in
-            let angle = segmentProgress * 360 * 2 + Double(particleIndex) * 120
-            let radius = spiralRadius * (0.8 + 0.4 * particleAnimation)
+    private var glowingParticles: some View {
+        ForEach(0..<4, id: \.self) { particleIndex in
+            let angle = segmentProgress * 720 + Double(particleIndex) * 90 + particleFlow * 360
+            let radius = helixRadius * (0.7 + 0.3 * sin(particleFlow * .pi * 2))
             let x = radius * cos(angle * .pi / 180)
             
             Circle()
-                .fill(Color.cyan.opacity(0.6))
-                .frame(width: 4, height: 4)
+                .fill(
+                    RadialGradient(
+                        colors: [Color.white, Color.cyan.opacity(0.3)],
+                        center: .center,
+                        startRadius: 1,
+                        endRadius: 4
+                    )
+                )
+                .frame(width: 6, height: 6)
                 .offset(x: x)
-                .scaleEffect(0.5 + 0.5 * particleAnimation)
-                .opacity(0.7 + 0.3 * particleAnimation)
+                .opacity(0.6 + 0.4 * sin(particleFlow * .pi * 2))
                 .blur(radius: 1)
+                .shadow(color: Color.white, radius: 3)
         }
+    }
+    
+    private var energyPulse: some View {
+        let angle = segmentProgress * 720
+        let pulsePhase = particleFlow * 4 // 更快的脉冲
+        
+        return ZStack {
+            // 能量环
+            Circle()
+                .stroke(
+                    Color.white.opacity(0.6),
+                    lineWidth: 2
+                )
+                .frame(width: helixRadius * 2, height: helixRadius * 2)
+                .scaleEffect(0.3 + 0.7 * sin(pulsePhase * .pi))
+                .opacity(0.4 + 0.6 * sin(pulsePhase * .pi))
+                .blur(radius: 2)
+            
+            // 中心光点
+            Circle()
+                .fill(Color.white)
+                .frame(width: 4, height: 4)
+                .scaleEffect(0.5 + 1.5 * sin(pulsePhase * .pi * 2))
+                .opacity(0.8 + 0.2 * sin(pulsePhase * .pi * 2))
+                .shadow(color: Color.white, radius: 6)
+        }
+        .opacity(sin(pulsePhase * .pi).magnitude)
     }
 }
 
 #Preview {
     VStack {
-        DNAProgressView(progress: 0.7)
+        DNAProgressView(progress: 0.75)
         Spacer()
     }
     .preferredColorScheme(.dark)
     .padding()
+    .background(Color.black)
 } 

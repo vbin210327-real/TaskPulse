@@ -190,7 +190,7 @@ extension Priority {
 struct MiniDNAProgressView: View {
     let progress: Double
     @State private var rotation: Double = 0
-    @State private var particleAnimation: Double = 0
+    @State private var glowPulse: Double = 0.5
     
     private let segments = 8
     
@@ -200,6 +200,17 @@ struct MiniDNAProgressView: View {
             let segmentHeight = height / CGFloat(segments)
             
             ZStack {
+                // 背景微星效果
+                ForEach(0..<6, id: \.self) { _ in
+                    Circle()
+                        .fill(Color.white.opacity(Double.random(in: 0.1...0.3)))
+                        .frame(width: 1, height: 1)
+                        .position(
+                            x: Double.random(in: 0...geometry.size.width),
+                            y: Double.random(in: 0...geometry.size.height)
+                        )
+                }
+                
                 ForEach(0..<segments, id: \.self) { index in
                     let segmentProgress = Double(index) / Double(segments - 1)
                     let isCompleted = segmentProgress <= progress
@@ -207,15 +218,19 @@ struct MiniDNAProgressView: View {
                     MiniDNASegmentView(
                         segmentProgress: segmentProgress,
                         isCompleted: isCompleted,
-                        rotation: rotation
+                        rotation: rotation,
+                        glowPulse: glowPulse
                     )
                     .offset(y: CGFloat(index) * segmentHeight - height/2 + segmentHeight/2)
                 }
             }
         }
         .onAppear {
-            withAnimation(.linear(duration: 4).repeatForever(autoreverses: false)) {
+            withAnimation(.linear(duration: 6).repeatForever(autoreverses: false)) {
                 rotation = 360
+            }
+            withAnimation(.easeInOut(duration: 2).repeatForever(autoreverses: true)) {
+                glowPulse = 1.0
             }
         }
     }
@@ -225,6 +240,7 @@ struct MiniDNASegmentView: View {
     let segmentProgress: Double
     let isCompleted: Bool
     let rotation: Double
+    let glowPulse: Double
     
     private let spiralRadius: CGFloat = 12
     
@@ -236,46 +252,122 @@ struct MiniDNASegmentView: View {
             // 右螺旋链
             rightSpiral
             
-            // 连接线
-            connectionLine
+            // 连接桥梁
+            connectionBridge
+            
+            // 发光粒子（仅完成部分）
+            if isCompleted {
+                glowingParticle
+            }
         }
         .rotation3DEffect(
-            .degrees(rotation * 0.5),
+            .degrees(rotation * 0.3),
             axis: (x: 0, y: 1, z: 0)
         )
     }
     
     private var leftSpiral: some View {
-        let angle = segmentProgress * 360 * 1.5
+        let angle = segmentProgress * 540 // 1.5圈螺旋
         let x = spiralRadius * cos(angle * .pi / 180)
         
-        return Circle()
-            .fill(isCompleted ? Color.green : Color.gray.opacity(0.3))
-            .frame(width: 3, height: 3)
-            .offset(x: x)
-            .shadow(color: isCompleted ? .green.opacity(0.6) : .clear, radius: isCompleted ? 2 : 0)
+        return ZStack {
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: isCompleted ? 
+                        [Color.cyan, Color.blue.opacity(0.3)] :
+                        [Color.gray.opacity(0.2), Color.clear],
+                        center: .center,
+                        startRadius: 1,
+                        endRadius: 3
+                    )
+                )
+                .frame(width: isCompleted ? 4 : 3, height: isCompleted ? 4 : 3)
+                .scaleEffect(isCompleted ? (1.0 + 0.2 * glowPulse) : 1.0)
+            
+            if isCompleted {
+                Circle()
+                    .fill(Color.cyan.opacity(0.4))
+                    .frame(width: 6, height: 6)
+                    .blur(radius: 1)
+                    .scaleEffect(0.8 + 0.3 * glowPulse)
+            }
+        }
+        .offset(x: x)
+        .shadow(
+            color: isCompleted ? Color.cyan : Color.clear,
+            radius: isCompleted ? (2 + glowPulse) : 0
+        )
     }
     
     private var rightSpiral: some View {
-        let angle = segmentProgress * 360 * 1.5 + 180
+        let angle = segmentProgress * 540 + 180 // 相位差180度
         let x = spiralRadius * cos(angle * .pi / 180)
         
-        return Circle()
-            .fill(isCompleted ? Color.blue : Color.gray.opacity(0.3))
-            .frame(width: 3, height: 3)
-            .offset(x: x)
-            .shadow(color: isCompleted ? .blue.opacity(0.6) : .clear, radius: isCompleted ? 2 : 0)
+        return ZStack {
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: isCompleted ? 
+                        [Color.blue, Color.purple.opacity(0.3)] :
+                        [Color.gray.opacity(0.2), Color.clear],
+                        center: .center,
+                        startRadius: 1,
+                        endRadius: 3
+                    )
+                )
+                .frame(width: isCompleted ? 4 : 3, height: isCompleted ? 4 : 3)
+                .scaleEffect(isCompleted ? (1.0 + 0.2 * glowPulse) : 1.0)
+            
+            if isCompleted {
+                Circle()
+                    .fill(Color.blue.opacity(0.4))
+                    .frame(width: 6, height: 6)
+                    .blur(radius: 1)
+                    .scaleEffect(0.8 + 0.3 * glowPulse)
+            }
+        }
+        .offset(x: x)
+        .shadow(
+            color: isCompleted ? Color.blue : Color.clear,
+            radius: isCompleted ? (2 + glowPulse) : 0
+        )
     }
     
-    private var connectionLine: some View {
-        let angle = segmentProgress * 360 * 1.5
+    private var connectionBridge: some View {
+        let angle = segmentProgress * 540
         let leftX = spiralRadius * cos(angle * .pi / 180)
         let rightX = spiralRadius * cos((angle + 180) * .pi / 180)
         
         return Rectangle()
-            .fill(isCompleted ? Color.cyan.opacity(0.6) : Color.gray.opacity(0.2))
-            .frame(width: abs(rightX - leftX), height: 1)
+            .fill(
+                LinearGradient(
+                    colors: isCompleted ? 
+                    [Color.cyan.opacity(0.6), Color.white.opacity(0.8), Color.blue.opacity(0.6)] :
+                    [Color.gray.opacity(0.2)],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+            )
+            .frame(width: abs(rightX - leftX), height: isCompleted ? 1.5 : 0.8)
             .offset(x: (leftX + rightX) / 2)
+            .shadow(
+                color: isCompleted ? Color.white : Color.clear,
+                radius: isCompleted ? (1 + 0.5 * glowPulse) : 0
+            )
+            .scaleEffect(y: isCompleted ? (1.0 + 0.3 * glowPulse) : 1.0)
+    }
+    
+    private var glowingParticle: some View {
+        let angle = segmentProgress * 540 + rotation * 2
+        let x = spiralRadius * 0.5 * cos(angle * .pi / 180)
+        
+        return Circle()
+            .fill(Color.white)
+            .frame(width: 2, height: 2)
+            .offset(x: x)
+            .opacity(0.6 + 0.4 * glowPulse)
+            .shadow(color: Color.white, radius: 1)
     }
 }
 
