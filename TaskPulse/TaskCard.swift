@@ -126,11 +126,10 @@ struct TaskCard: View {
                 Text("进度")
                     .font(.caption2)
                     .foregroundColor(.secondary)
-                Spacer()
                 
-                // 使用DNA螺旋进度条，但是小型版本
+                // 使用DNA螺旋进度条，水平交叉环绕版本
                 MiniDNAProgressView(progress: task.progress)
-                    .frame(width: 80, height: 40)
+                    .frame(width: 120, height: 20)
                 
                 Text("\(Int(task.progress * 100))%")
                     .font(.caption2)
@@ -192,16 +191,16 @@ struct MiniDNAProgressView: View {
     @State private var rotation: Double = 0
     @State private var glowPulse: Double = 0.5
     
-    private let segments = 8
+    private let segments = 15 // 更多段数用于水平布局
     
     var body: some View {
         GeometryReader { geometry in
-            let height = geometry.size.height
-            let segmentHeight = height / CGFloat(segments)
+            let width = geometry.size.width
+            let segmentWidth = width / CGFloat(segments)
             
             ZStack {
                 // 背景微星效果
-                ForEach(0..<6, id: \.self) { _ in
+                ForEach(0..<8, id: \.self) { _ in
                     Circle()
                         .fill(Color.white.opacity(Double.random(in: 0.1...0.3)))
                         .frame(width: 1, height: 1)
@@ -221,15 +220,15 @@ struct MiniDNAProgressView: View {
                         rotation: rotation,
                         glowPulse: glowPulse
                     )
-                    .offset(y: CGFloat(index) * segmentHeight - height/2 + segmentHeight/2)
+                    .offset(x: CGFloat(index) * segmentWidth - width/2 + segmentWidth/2)
                 }
             }
         }
         .onAppear {
-            withAnimation(.linear(duration: 6).repeatForever(autoreverses: false)) {
+            withAnimation(.linear(duration: 8).repeatForever(autoreverses: false)) {
                 rotation = 360
             }
-            withAnimation(.easeInOut(duration: 2).repeatForever(autoreverses: true)) {
+            withAnimation(.easeInOut(duration: 3).repeatForever(autoreverses: true)) {
                 glowPulse = 1.0
             }
         }
@@ -242,15 +241,15 @@ struct MiniDNASegmentView: View {
     let rotation: Double
     let glowPulse: Double
     
-    private let spiralRadius: CGFloat = 12
+    private let helixHeight: CGFloat = 8 // 水平螺旋的高度
     
     var body: some View {
         ZStack {
-            // 左螺旋链
-            leftSpiral
+            // 上螺旋链（水平交叉）
+            topHelix
             
-            // 右螺旋链
-            rightSpiral
+            // 下螺旋链（水平交叉）
+            bottomHelix
             
             // 连接桥梁
             connectionBridge
@@ -260,15 +259,11 @@ struct MiniDNASegmentView: View {
                 glowingParticle
             }
         }
-        .rotation3DEffect(
-            .degrees(rotation * 0.3),
-            axis: (x: 0, y: 1, z: 0)
-        )
     }
     
-    private var leftSpiral: some View {
-        let angle = segmentProgress * 540 // 1.5圈螺旋
-        let x = spiralRadius * cos(angle * .pi / 180)
+    private var topHelix: some View {
+        let angle = segmentProgress * 720 + rotation // 水平螺旋波动
+        let y = helixHeight * sin(angle * .pi / 180) // 垂直波动
         
         return ZStack {
             Circle()
@@ -293,16 +288,16 @@ struct MiniDNASegmentView: View {
                     .scaleEffect(0.8 + 0.3 * glowPulse)
             }
         }
-        .offset(x: x)
+        .offset(y: y)
         .shadow(
             color: isCompleted ? Color.cyan : Color.clear,
             radius: isCompleted ? (2 + glowPulse) : 0
         )
     }
     
-    private var rightSpiral: some View {
-        let angle = segmentProgress * 540 + 180 // 相位差180度
-        let x = spiralRadius * cos(angle * .pi / 180)
+    private var bottomHelix: some View {
+        let angle = segmentProgress * 720 + rotation + 180 // 相位差180度
+        let y = helixHeight * sin(angle * .pi / 180) // 垂直波动
         
         return ZStack {
             Circle()
@@ -327,7 +322,7 @@ struct MiniDNASegmentView: View {
                     .scaleEffect(0.8 + 0.3 * glowPulse)
             }
         }
-        .offset(x: x)
+        .offset(y: y)
         .shadow(
             color: isCompleted ? Color.blue : Color.clear,
             radius: isCompleted ? (2 + glowPulse) : 0
@@ -335,9 +330,11 @@ struct MiniDNASegmentView: View {
     }
     
     private var connectionBridge: some View {
-        let angle = segmentProgress * 540
-        let leftX = spiralRadius * cos(angle * .pi / 180)
-        let rightX = spiralRadius * cos((angle + 180) * .pi / 180)
+        let angle1 = segmentProgress * 720 + rotation
+        let angle2 = segmentProgress * 720 + rotation + 180
+        let y1 = helixHeight * sin(angle1 * .pi / 180)
+        let y2 = helixHeight * sin(angle2 * .pi / 180)
+        let bridgeHeight = abs(y2 - y1)
         
         return Rectangle()
             .fill(
@@ -345,27 +342,27 @@ struct MiniDNASegmentView: View {
                     colors: isCompleted ? 
                     [Color.cyan.opacity(0.6), Color.white.opacity(0.8), Color.blue.opacity(0.6)] :
                     [Color.gray.opacity(0.2)],
-                    startPoint: .leading,
-                    endPoint: .trailing
+                    startPoint: .top,
+                    endPoint: .bottom
                 )
             )
-            .frame(width: abs(rightX - leftX), height: isCompleted ? 1.5 : 0.8)
-            .offset(x: (leftX + rightX) / 2)
+            .frame(width: isCompleted ? 1.5 : 0.8, height: max(bridgeHeight, 1))
+            .offset(y: (y1 + y2) / 2)
             .shadow(
                 color: isCompleted ? Color.white : Color.clear,
                 radius: isCompleted ? (1 + 0.5 * glowPulse) : 0
             )
-            .scaleEffect(y: isCompleted ? (1.0 + 0.3 * glowPulse) : 1.0)
+            .scaleEffect(x: isCompleted ? (1.0 + 0.3 * glowPulse) : 1.0)
     }
     
     private var glowingParticle: some View {
-        let angle = segmentProgress * 540 + rotation * 2
-        let x = spiralRadius * 0.5 * cos(angle * .pi / 180)
+        let angle = segmentProgress * 720 + rotation * 3
+        let y = helixHeight * 0.5 * sin(angle * .pi / 180)
         
         return Circle()
             .fill(Color.white)
             .frame(width: 2, height: 2)
-            .offset(x: x)
+            .offset(y: y)
             .opacity(0.6 + 0.4 * glowPulse)
             .shadow(color: Color.white, radius: 1)
     }

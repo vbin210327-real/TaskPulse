@@ -23,11 +23,11 @@ struct DashboardView: View {
             VStack(spacing: 20) {
                 // Title and Cards
                 HStack(spacing: 10) {
-                    Button(action: { onCardTapped?(.all) }) { StatsCard(icon: "list.bullet", color: .lightBlue, value: totalTasks, label: "总任务") }
-                    Button(action: { onCardTapped?(.completed) }) { StatsCard(icon: "checkmark.circle", color: .green, value: completedTasks, label: "已完成") }
-                    Button(action: { onCardTapped?(.inProgress) }) { StatsCard(icon: "arrow.right.circle", color: .orange, value: inProgressTasks, label: "进行中") }
-                    Button(action: { onCardTapped?(.overdue) }) { StatsCard(icon: "exclamationmark.triangle", color: .red, value: overdueTasks, label: "逾期") }
-                }.buttonStyle(PlainButtonStyle())
+                    StatsCard(icon: "list.bullet", color: .lightBlue, value: totalTasks, label: "总任务")
+                    StatsCard(icon: "checkmark.circle", color: .green, value: completedTasks, label: "已完成")
+                    StatsCard(icon: "arrow.right.circle", color: .orange, value: inProgressTasks, label: "进行中")
+                    StatsCard(icon: "exclamationmark.triangle", color: .red, value: overdueTasks, label: "逾期")
+                }
 
                 // Completion Rate and Average Progress in a Vertical Stack
                 VStack(spacing: 20) {
