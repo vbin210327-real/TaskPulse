@@ -73,6 +73,7 @@ struct TaskCard: View {
                     }
                 }
             }
+            
             HStack(spacing: 8) {
                 if let due = task.dueDate {
                     HStack(spacing: 2) {
@@ -101,22 +102,35 @@ struct TaskCard: View {
                         .foregroundColor(.blue)
                 }
                 Spacer()
+                
+                // 使用更好的按钮样式，增大触摸区域
+                HStack(spacing: 12) {
                 if let onEdit = onEdit {
                     Button(action: onEdit) {
                         Image(systemName: "pencil")
-                    }.buttonStyle(.plain)
+                                .foregroundColor(.blue)
+                                .frame(width: 44, height: 44) // 增大触摸区域
+                        }
+                        .buttonStyle(BorderlessButtonStyle())
                 }
+                    
                 if let onDelete = onDelete {
                     Button(action: onDelete) {
                         Image(systemName: "trash")
-                    }.buttonStyle(.plain)
+                                .foregroundColor(.red)
+                                .frame(width: 44, height: 44) // 增大触摸区域
+                        }
+                        .buttonStyle(BorderlessButtonStyle())
                 }
+                    
                 if let onToggleComplete = onToggleComplete {
                     Button(action: onToggleComplete) {
                         Image(systemName: task.completed ? "arrow.uturn.left" : "checkmark")
+                                .foregroundColor(task.completed ? .orange : .green)
+                                .frame(width: 44, height: 44) // 增大触摸区域
+                        }
+                        .buttonStyle(BorderlessButtonStyle())
                     }
-                    .buttonStyle(.plain)
-                    .foregroundColor(task.completed ? .orange : .green)
                 }
             }
             .padding(.top, 4)
@@ -146,8 +160,9 @@ struct TaskCard: View {
                     }
                     .font(.caption)
                     .foregroundColor(.secondary)
+                    .frame(minHeight: 44) // 增大触摸区域
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(BorderlessButtonStyle())
 
                 if isExpanded {
                     ForEach(task.subtasks) { subtask in
@@ -156,9 +171,10 @@ struct TaskCard: View {
                             Spacer()
                             Button(action: { onToggleSubtask?(subtask.id) }) {
                                 Image(systemName: subtask.completed ? "checkmark.square.fill" : "square")
+                                    .foregroundColor(subtask.completed ? .green : .gray)
+                                    .frame(width: 44, height: 44) // 增大触摸区域
                             }
-                            .buttonStyle(.plain)
-                            .foregroundColor(subtask.completed ? .green : .gray)
+                            .buttonStyle(BorderlessButtonStyle())
                         }
                         .padding(.leading)
                     }
