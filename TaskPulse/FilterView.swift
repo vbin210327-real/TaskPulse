@@ -51,8 +51,8 @@ struct FilterView: View {
                 }
             }
             .onAppear {
-                // 设置初始值：如果当前状态为空，则默认为"进行中"
-                localStatus = status ?? .inProgress
+                // 设置初始值：保持当前的筛选状态，不强制默认
+                localStatus = status
             }
         }
     }
