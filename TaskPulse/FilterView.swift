@@ -14,6 +14,14 @@ struct FilterView: View {
     
     @State private var localStatus: TaskStatus?
     
+    init(priority: Binding<Priority?>, status: Binding<TaskStatus?>, startDate: Binding<Date?>, endDate: Binding<Date?>) {
+        self._priority = priority
+        self._status = status
+        self._startDate = startDate
+        self._endDate = endDate
+        self._localStatus = State(initialValue: status.wrappedValue)
+    }
+    
     enum TaskStatus: String, CaseIterable {
         case completed = "已完成"
         case inProgress = "进行中"
@@ -51,10 +59,7 @@ struct FilterView: View {
                     }
                 }
             }
-            .onAppear {
-                // 设置初始值：保持当前的筛选状态，不强制默认
-                localStatus = status
-            }
+
         }
     }
 }
