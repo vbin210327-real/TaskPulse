@@ -31,6 +31,7 @@ struct FilterView: View {
                         }
                     }
                     Picker("状态", selection: $localStatus) {
+                        Text("全部状态").tag(TaskStatus?(nil))
                         ForEach(TaskStatus.allCases, id: \.self) { s in
                             Text(s.rawValue).tag(TaskStatus?(s))
                         }

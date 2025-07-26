@@ -12,19 +12,23 @@ struct StatsCard: View {
     let label: String
     
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 6) {
             Image(systemName: icon)
                 .font(.system(size: 30))
                 .foregroundColor(color)
+                .frame(height: 30)
             Text("\(value)")
                 .font(.title)
                 .fontWeight(.bold)
                 .multilineTextAlignment(.center)
+                .frame(height: 28)
             Text(label)
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
+                .frame(width: 70, height: 20)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
         }
         .frame(width: 80, height: 100)
         .background(color.opacity(0.1))
