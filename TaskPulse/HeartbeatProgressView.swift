@@ -53,8 +53,6 @@ struct HeartCurveShape: Shape {
 struct HeartbeatProgressView: View {
     var progress: Double
 
-    @State private var animateGlow = false
-
     var body: some View {
         VStack(spacing: 16) {
             // Header
@@ -107,19 +105,6 @@ struct HeartbeatProgressView: View {
                         )
                         .shadow(color: .electricCyan.opacity(0.8), radius: glowIntensity)
                         .shadow(color: .electricCyan.opacity(0.4), radius: glowIntensity * 2)
-
-                    // Leading edge glow point
-                    if progress > 0 {
-                        Circle()
-                            .fill(Color.electricCyan)
-                            .frame(width: 8, height: 8)
-                            .overlay(
-                                Circle()
-                                    .stroke(Color.cosmicBlack.opacity(0.6), lineWidth: 1)
-                            )
-                            .position(getPointOnPath(at: progress))
-                            .animation(.easeInOut(duration: 0.3), value: progress)
-                    }
                 }
                 .frame(height: 100)
             }
@@ -143,25 +128,6 @@ struct HeartbeatProgressView: View {
                 .font(.cosmicCaption2)
                 .foregroundColor(.cosmicTextMuted)
         }
-    }
-
-    private func getPointOnPath(at progress: Double) -> CGPoint {
-        // Approximate position based on progress
-        // This is a simplified calculation - for perfect accuracy you'd trace the actual path
-        let x = progress * UIScreen.main.bounds.width * 0.85
-        let baseY: CGFloat = 50
-
-        // Add variation based on the EKG pattern
-        var yOffset: CGFloat = 0
-        if progress > 0.2 && progress < 0.3 {
-            yOffset = -25 * sin((progress - 0.2) * 10 * .pi)
-        } else if progress > 0.35 && progress < 0.65 {
-            yOffset = -20 * sin((progress - 0.35) * 3.33 * .pi)
-        } else if progress > 0.74 && progress < 0.84 {
-            yOffset = -25 * sin((progress - 0.74) * 10 * .pi)
-        }
-
-        return CGPoint(x: x + 30, y: baseY + yOffset)
     }
 }
 
