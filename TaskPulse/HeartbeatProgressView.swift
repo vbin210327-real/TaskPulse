@@ -111,10 +111,12 @@ struct HeartbeatProgressView: View {
                     // Leading edge glow point
                     if progress > 0 {
                         Circle()
-                            .fill(Color.white)
+                            .fill(Color.electricCyan)
                             .frame(width: 8, height: 8)
-                            .shadow(color: .electricCyan, radius: 6)
-                            .shadow(color: .white.opacity(0.8), radius: 3)
+                            .overlay(
+                                Circle()
+                                    .stroke(Color.cosmicBlack.opacity(0.6), lineWidth: 1)
+                            )
                             .position(getPointOnPath(at: progress))
                             .animation(.easeInOut(duration: 0.3), value: progress)
                     }
