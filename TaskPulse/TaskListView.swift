@@ -128,7 +128,7 @@ struct TaskListView: View {
                 activeFilter = savedActiveFilter ?? .inProgress
             }
         }
-        .onChange(of: activeFilter) { newValue in
+        .onChange(of: activeFilter) { _, newValue in
             savedActiveFilterRaw = newValue?.rawValue ?? "inProgress"
         }
     }
