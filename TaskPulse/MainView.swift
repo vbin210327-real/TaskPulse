@@ -19,25 +19,23 @@ struct MainView: View {
                 AnimatedCosmicBackground()
                 NoiseOverlay()
 
-                VStack(spacing: 0) {
-                    // Content
-                    TabView(selection: $selectedTab) {
-                        DashboardView(taskManager: taskManager, taskToAnimate: $taskToAnimate) { status in
-                            filterToApply = status
-                            showingFilteredTasks = true
-                        }
-                        .tag(0)
+                TabView(selection: $selectedTab) {
+                    DashboardView(taskManager: taskManager, taskToAnimate: $taskToAnimate) { status in
+                        filterToApply = status
+                        showingFilteredTasks = true
+                    }
+                    .tabItem {
+                        Label("概览", systemImage: "chart.pie.fill")
+                    }
+                    .tag(0)
 
-                        TaskListView(taskManager: taskManager, taskToAnimate: $taskToAnimate, applyFilter: $filterToApply)
-                            .tag(1)
-                    }
-                    .tabViewStyle(.page(indexDisplayMode: .never))
-                    .safeAreaInset(edge: .bottom, spacing: 0) {
-                        cosmicTabBar
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 10)
-                    }
+                    TaskListView(taskManager: taskManager, taskToAnimate: $taskToAnimate, applyFilter: $filterToApply)
+                        .tabItem {
+                            Label("任务", systemImage: "list.bullet.rectangle.fill")
+                        }
+                        .tag(1)
                 }
+                .tint(.electricCyan)
             }
             .environmentObject(taskManager)
             .navigationBarHidden(taskToAnimate != nil)
@@ -91,53 +89,6 @@ struct MainView: View {
                 .preferredColorScheme(.dark)
             }
         }
-    }
-
-    // MARK: - Cosmic Tab Bar
-    private var cosmicTabBar: some View {
-        HStack(spacing: 0) {
-            ForEach(0..<2) { index in
-                Button(action: {
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
-                        selectedTab = index
-                    }
-                }) {
-                    HStack(spacing: 8) {
-                        Image(systemName: index == 0 ? "chart.pie.fill" : "list.bullet.rectangle.fill")
-                            .font(.system(size: 16, weight: .semibold))
-
-                        Text(index == 0 ? "概览" : "任务")
-                            .font(.cosmicHeadline)
-                    }
-                    .foregroundColor(selectedTab == index ? .cosmicBlack : .cosmicTextSecondary)
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 12)
-                    .background(
-                        Group {
-                            if selectedTab == index {
-                                Capsule()
-                                    .fill(Color.electricCyan)
-                                    .cosmicGlow(.electricCyan, radius: 6)
-                            }
-                        }
-                    )
-                }
-                .buttonStyle(.plain)
-
-                if index == 0 {
-                    Spacer()
-                }
-            }
-        }
-        .padding(6)
-        .background(
-            Capsule()
-                .fill(Color.cosmicSurface)
-                .overlay(
-                    Capsule()
-                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
-                )
-        )
     }
 }
 
