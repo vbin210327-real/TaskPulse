@@ -79,35 +79,28 @@ struct HeartbeatProgressView: View {
             }
 
             // Heartbeat Line
-            TimelineView(.animation(minimumInterval: 0.03, paused: progress == 0)) { timeline in
-                let time = timeline.date.timeIntervalSinceReferenceDate
-                let pulse = sin(time * 4) * (progress > 0 ? 1 : 0)
-                let glowIntensity = 4 + pulse * 2
+            ZStack {
+                // Background track
+                HeartCurveShape()
+                    .stroke(
+                        Color.cosmicSurface,
+                        style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round)
+                    )
 
-                ZStack {
-                    // Background track
-                    HeartCurveShape()
-                        .stroke(
-                            Color.cosmicSurface,
-                            style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round)
-                        )
-
-                    // Actual progress with glow
-                    HeartCurveShape()
-                        .trim(from: 0, to: progress)
-                        .stroke(
-                            LinearGradient(
-                                colors: [.electricCyan, .cosmicLavender],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            ),
-                            style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round)
-                        )
-                        .shadow(color: .electricCyan.opacity(0.8), radius: glowIntensity)
-                        .shadow(color: .electricCyan.opacity(0.4), radius: glowIntensity * 2)
-                }
-                .frame(height: 100)
+                // Actual progress (no glow)
+                HeartCurveShape()
+                    .trim(from: 0, to: progress)
+                    .stroke(
+                        LinearGradient(
+                            colors: [.electricCyan, .cosmicLavender],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        ),
+                        style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round)
+                    )
+                    .animation(.easeInOut(duration: 0.3), value: progress)
             }
+            .frame(height: 100)
 
             // Mini stats
             HStack(spacing: 20) {
