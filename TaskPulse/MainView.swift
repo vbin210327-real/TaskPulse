@@ -1,7 +1,7 @@
 // MainView.swift
 // TaskPulse
 //
-// Created by AI Assistant.
+// Cosmic Minimalism Redesign
 
 import SwiftUI
 
@@ -14,42 +14,34 @@ struct MainView: View {
 
     var body: some View {
         NavigationStack {
-            VStack {
-                HStack(spacing: 0) {
-                    Button(action: { selectedTab = 0 }) {
-                        HStack {
-                            Image(systemName: "chart.pie")
-                            Text("概览")
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(selectedTab == 0 ? Color.lightBlue.opacity(0.3) : Color.clear)
-                    }
-                    Button(action: { selectedTab = 1 }) {
-                        HStack {
-                            Image(systemName: "list.bullet")
-                            Text("任务")
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(selectedTab == 1 ? Color.lightBlue.opacity(0.3) : Color.clear)
-                    }
-                }
-                .background(Color.gray.opacity(0.1))
-                .cornerRadius(10)
-                .padding(.horizontal)
+            ZStack {
+                // Animated cosmic background
+                AnimatedCosmicBackground()
+                NoiseOverlay()
 
-                if selectedTab == 0 {
-                    DashboardView(taskManager: taskManager, taskToAnimate: $taskToAnimate) { status in
-                        filterToApply = status
-                        showingFilteredTasks = true
+                VStack(spacing: 0) {
+                    // Custom cosmic tab bar
+                    cosmicTabBar
+                        .padding(.horizontal, 20)
+                        .padding(.top, 8)
+
+                    // Content
+                    TabView(selection: $selectedTab) {
+                        DashboardView(taskManager: taskManager, taskToAnimate: $taskToAnimate) { status in
+                            filterToApply = status
+                            showingFilteredTasks = true
+                        }
+                        .tag(0)
+
+                        TaskListView(taskManager: taskManager, taskToAnimate: $taskToAnimate, applyFilter: $filterToApply)
+                            .tag(1)
                     }
-                } else {
-                    TaskListView(taskManager: taskManager, taskToAnimate: $taskToAnimate, applyFilter: $filterToApply)
+                    .tabViewStyle(.page(indexDisplayMode: .never))
                 }
             }
-            .accentColor(.lightBlue)
             .environmentObject(taskManager)
+            .navigationBarHidden(taskToAnimate != nil)
+            .preferredColorScheme(.dark)
             .overlay {
                 if let task = taskToAnimate {
                     CompletionEffect(
@@ -57,8 +49,6 @@ struct MainView: View {
                         taskToAnimate: $taskToAnimate,
                         taskManager: taskManager,
                         onCompletion: {
-                            // 只有当任务还未完成时才切换状态
-                            // 如果任务已经被子任务完成触发，就不需要再次切换
                             if !task.completed {
                                 withAnimation {
                                     taskManager.toggleCompletion(for: task)
@@ -70,34 +60,87 @@ struct MainView: View {
             }
             .sheet(isPresented: $showingFilteredTasks) {
                 NavigationStack {
-                    TaskListView(taskManager: taskManager, taskToAnimate: $taskToAnimate, applyFilter: $filterToApply)
-                        .toolbar {
-                            ToolbarItem(placement: .navigationBarTrailing) {
-                                Button("完成") {
-                                    showingFilteredTasks = false
-                                }
+                    ZStack {
+                        Color.cosmicBlack.ignoresSafeArea()
+                        TaskListView(taskManager: taskManager, taskToAnimate: $taskToAnimate, applyFilter: $filterToApply)
+                    }
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button("完成") {
+                                showingFilteredTasks = false
                             }
+                            .font(.cosmicHeadline)
+                            .foregroundColor(.electricCyan)
                         }
-                        .overlay {
-                            if let task = taskToAnimate {
-                                CompletionEffect(
-                                    task: task,
-                                    taskToAnimate: $taskToAnimate,
-                                    taskManager: taskManager,
-                                    onCompletion: {
-                                        withAnimation {
-                                            taskManager.toggleCompletion(for: task)
-                                        }
+                    }
+                    .overlay {
+                        if let task = taskToAnimate {
+                            CompletionEffect(
+                                task: task,
+                                taskToAnimate: $taskToAnimate,
+                                taskManager: taskManager,
+                                onCompletion: {
+                                    withAnimation {
+                                        taskManager.toggleCompletion(for: task)
                                     }
-                                )
+                                }
+                            )
+                        }
+                    }
+                }
+                .preferredColorScheme(.dark)
+            }
+        }
+    }
+
+    // MARK: - Cosmic Tab Bar
+    private var cosmicTabBar: some View {
+        HStack(spacing: 0) {
+            ForEach(0..<2) { index in
+                Button(action: {
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                        selectedTab = index
+                    }
+                }) {
+                    HStack(spacing: 8) {
+                        Image(systemName: index == 0 ? "chart.pie.fill" : "list.bullet.rectangle.fill")
+                            .font(.system(size: 16, weight: .semibold))
+
+                        Text(index == 0 ? "概览" : "任务")
+                            .font(.cosmicHeadline)
+                    }
+                    .foregroundColor(selectedTab == index ? .cosmicBlack : .cosmicTextSecondary)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 12)
+                    .background(
+                        Group {
+                            if selectedTab == index {
+                                Capsule()
+                                    .fill(Color.electricCyan)
+                                    .cosmicGlow(.electricCyan, radius: 6)
                             }
                         }
+                    )
+                }
+                .buttonStyle(.plain)
+
+                if index == 0 {
+                    Spacer()
                 }
             }
         }
+        .padding(6)
+        .background(
+            Capsule()
+                .fill(Color.cosmicSurface)
+                .overlay(
+                    Capsule()
+                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                )
+        )
     }
 }
 
 #Preview {
     MainView()
-} 
+}

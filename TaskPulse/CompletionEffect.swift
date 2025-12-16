@@ -1,7 +1,7 @@
 // CompletionEffect.swift
 // TaskPulse
 //
-// Created by AI Assistant.
+// Cosmic Minimalism Completion Effect
 
 import SwiftUI
 
@@ -9,29 +9,37 @@ struct CompletionEffect: View {
     let task: Task
     @Binding var taskToAnimate: Task?
     @ObservedObject var taskManager: TaskManager
-    var onCompletion: () -> Void // Add a callback for when the animation finishes
+    var onCompletion: () -> Void
 
     // Animation states
     @State private var showLaser = false
     @State private var laserPathProgress: CGFloat = 0.0
     @State private var cardPiecesFlyOff = false
     @State private var congratulatoryTextVisible = false
+    @State private var particlesVisible = false
 
     var body: some View {
         ZStack {
-            Color.black.opacity(0.95).edgesIgnoringSafeArea(.all)
+            // Cosmic background
+            Color.cosmicBlack.opacity(0.98).ignoresSafeArea()
+
+            // Particle effects
+            if particlesVisible {
+                ForEach(0..<30) { i in
+                    ParticleView(index: i)
+                }
+            }
 
             if let animatingTask = taskToAnimate, animatingTask.id == self.task.id,
                let currentTask = taskManager.tasks.first(where: { $0.id == animatingTask.id }) {
                 VStack {
                     Spacer()
-                    
+
                     GeometryReader { geo in
                         ZStack {
                             let cardView = TaskCard(task: currentTask)
                                 .frame(width: geo.size.width, height: geo.size.height)
-                                .foregroundColor(.white)
-                            
+
                             // Bottom-left piece
                             cardView
                                 .clipShape(BottomLeftPiece())
@@ -41,6 +49,7 @@ struct CompletionEffect: View {
                                     axis: (x: 0, y: 1, z: 0.2),
                                     anchor: .center
                                 )
+                                .opacity(cardPiecesFlyOff ? 0 : 1)
 
                             // Top-right piece
                             cardView
@@ -51,29 +60,60 @@ struct CompletionEffect: View {
                                     axis: (x: 0.2, y: -1, z: 0),
                                     anchor: .center
                                 )
+                                .opacity(cardPiecesFlyOff ? 0 : 1)
 
-                            // The laser beam that follows the cut line
+                            // The laser beam with cosmic glow
                             LaserPath()
                                 .trim(from: 0, to: laserPathProgress)
-                                .stroke(Color.white, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
-                                .shadow(color: .cyan, radius: 8, x: 0, y: 0)
-                                .shadow(color: .white, radius: 5, x: 0, y: 0)
+                                .stroke(
+                                    LinearGradient(
+                                        colors: [.electricCyan, .white, .cosmicLavender],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    ),
+                                    style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round)
+                                )
+                                .shadow(color: .electricCyan, radius: 12, x: 0, y: 0)
+                                .shadow(color: .white, radius: 6, x: 0, y: 0)
+                                .shadow(color: .electricCyan.opacity(0.5), radius: 20, x: 0, y: 0)
                                 .opacity(showLaser ? 1 : 0)
                         }
                     }
-                    .padding(.horizontal, 40) // Give some horizontal padding
-                    .aspectRatio(1.5, contentMode: .fit) // Make it a bit taller than default card aspect ratio
+                    .padding(.horizontal, 40)
+                    .aspectRatio(1.5, contentMode: .fit)
 
-                    // Congratulatory message appears after the split
+                    // Congratulatory message
                     if congratulatoryTextVisible {
-                        Text("🎉 干得漂亮！气运加一 🎉")
-                            .font(.largeTitle)
-                            .fontWeight(.bold)
-                            .foregroundColor(.white)
-                            .transition(AnyTransition.opacity.combined(with: .scale))
-                            .id("congratsText")
+                        VStack(spacing: 16) {
+                            Text("🎉")
+                                .font(.system(size: 64))
+
+                            VStack(spacing: 8) {
+                                Text("干得漂亮！")
+                                    .font(.cosmicTitle)
+                                    .foregroundColor(.cosmicTextPrimary)
+
+                                Text("气运 +1")
+                                    .font(.cosmicHeadline)
+                                    .foregroundColor(.electricCyan)
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 8)
+                                    .background(
+                                        Capsule()
+                                            .fill(Color.electricCyan.opacity(0.2))
+                                            .overlay(
+                                                Capsule()
+                                                    .stroke(Color.electricCyan.opacity(0.5), lineWidth: 1)
+                                            )
+                                    )
+                            }
+                        }
+                        .transition(.asymmetric(
+                            insertion: .scale(scale: 0.5).combined(with: .opacity),
+                            removal: .opacity
+                        ))
                     }
-                    
+
                     Spacer()
                     Spacer()
                 }
@@ -81,10 +121,15 @@ struct CompletionEffect: View {
                 .onAppear(perform: runAnimationSequence)
             }
         }
-        .edgesIgnoringSafeArea(.all)
+        .ignoresSafeArea()
     }
 
     private func runAnimationSequence() {
+        // 0. Show particles
+        withAnimation(.easeIn(duration: 0.3)) {
+            particlesVisible = true
+        }
+
         // 1. Show the laser and animate its path across the card
         withAnimation(.linear(duration: 0.5)) {
             showLaser = true
@@ -97,7 +142,7 @@ struct CompletionEffect: View {
                 cardPiecesFlyOff = true
             }
             withAnimation(.spring(response: 0.6, dampingFraction: 0.6, blendDuration: 1.0)) {
-                 congratulatoryTextVisible = true
+                congratulatoryTextVisible = true
             }
         }
 
@@ -111,10 +156,50 @@ struct CompletionEffect: View {
         // 4. After the animation is complete, dismiss the effect view and notify the parent
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
             withAnimation {
-                onCompletion() // Actually mark the task as completed
+                onCompletion()
                 taskToAnimate = nil
             }
         }
+    }
+}
+
+// MARK: - Particle View
+struct ParticleView: View {
+    let index: Int
+
+    @State private var position: CGPoint = .zero
+    @State private var opacity: Double = 0
+    @State private var scale: CGFloat = 0
+
+    var body: some View {
+        Circle()
+            .fill(index % 2 == 0 ? Color.electricCyan : Color.cosmicLavender)
+            .frame(width: CGFloat.random(in: 2...6), height: CGFloat.random(in: 2...6))
+            .position(position)
+            .opacity(opacity)
+            .scaleEffect(scale)
+            .blur(radius: 0.5)
+            .onAppear {
+                let screenWidth = UIScreen.main.bounds.width
+                let screenHeight = UIScreen.main.bounds.height
+
+                position = CGPoint(
+                    x: CGFloat.random(in: 0...screenWidth),
+                    y: CGFloat.random(in: 0...screenHeight)
+                )
+
+                withAnimation(.easeOut(duration: Double.random(in: 0.5...1.5)).delay(Double(index) * 0.05)) {
+                    opacity = Double.random(in: 0.3...0.8)
+                    scale = CGFloat.random(in: 0.5...1.5)
+                }
+
+                withAnimation(.easeInOut(duration: Double.random(in: 1...2)).repeatForever(autoreverses: true).delay(Double(index) * 0.05)) {
+                    position = CGPoint(
+                        x: position.x + CGFloat.random(in: -30...30),
+                        y: position.y + CGFloat.random(in: -30...30)
+                    )
+                }
+            }
     }
 }
 
@@ -132,9 +217,9 @@ struct LaserPath: Shape {
 struct TopRightPiece: Shape {
     func path(in rect: CGRect) -> Path {
         var path = Path()
-        path.move(to: CGPoint(x: rect.minX, y: rect.minY)) // Top-left corner
-        path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY)) // Top-right corner
-        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY)) // Bottom-right corner
+        path.move(to: CGPoint(x: rect.minX, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
         path.closeSubpath()
         return path
     }
@@ -144,9 +229,9 @@ struct TopRightPiece: Shape {
 struct BottomLeftPiece: Shape {
     func path(in rect: CGRect) -> Path {
         var path = Path()
-        path.move(to: CGPoint(x: rect.minX, y: rect.minY)) // Top-left corner
-        path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY)) // Bottom-left corner
-        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY)) // Bottom-right corner
+        path.move(to: CGPoint(x: rect.minX, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
         path.closeSubpath()
         return path
     }
@@ -157,5 +242,6 @@ struct CompletionEffect_Previews: PreviewProvider {
         let task = Task(title: "Preview Task", description: "A task for previewing.", dueDate: Date(), priority: .medium)
         let taskManager = TaskManager()
         CompletionEffect(task: task, taskToAnimate: .constant(task), taskManager: taskManager, onCompletion: {})
+            .preferredColorScheme(.dark)
     }
-} 
+}

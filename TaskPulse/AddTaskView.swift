@@ -1,14 +1,14 @@
 // AddTaskView.swift
 // TaskPulse
 //
-// Created by AI Assistant.
+// Cosmic Minimalism Add Task View
 
 import SwiftUI
 
 struct AddTaskView: View {
     @ObservedObject var taskManager: TaskManager
     @Environment(\.dismiss) private var dismiss
-    
+
     @State private var title = ""
     @State private var description = ""
     @State private var dueDate: Date? = nil
@@ -16,173 +16,309 @@ struct AddTaskView: View {
     @State private var priority: Priority = .medium
     @State private var subtasks: [Subtask] = []
     @State private var newSubtaskTitle = ""
-    
+
+    @FocusState private var isTitleFocused: Bool
+
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    taskDetailsSection
-                    dueDateSection
-                    subtasksSection
+            ZStack {
+                Color.cosmicBlack.ignoresSafeArea()
+
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 28) {
+                        // Task Details Section
+                        taskDetailsSection
+
+                        // Priority Section
+                        prioritySection
+
+                        // Due Date Section
+                        dueDateSection
+
+                        // Subtasks Section
+                        subtasksSection
+
+                        Spacer(minLength: 40)
+                    }
+                    .padding(20)
                 }
-                .padding()
             }
-            .background(Color(.systemGroupedBackground).edgesIgnoringSafeArea(.all))
             .navigationTitle("添加新任务")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("取消") { dismiss() }
+                        .font(.cosmicBody)
+                        .foregroundColor(.cosmicTextSecondary)
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("保存") {
+                    Button(action: {
                         saveTask()
                         dismiss()
+                    }) {
+                        Text("保存")
+                            .font(.cosmicHeadline)
+                            .foregroundColor(title.isEmpty ? .cosmicTextMuted : .electricCyan)
                     }
                     .disabled(title.isEmpty)
-                    .fontWeight(.bold)
                 }
+            }
+            .toolbarBackground(Color.cosmicDeep, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
+            .onAppear {
+                isTitleFocused = true
             }
         }
     }
-    
-    // MARK: - View Sections
+
+    // MARK: - Task Details Section
     private var taskDetailsSection: some View {
-        VStack(alignment: .leading, spacing: 15) {
-            Label("任务详情", systemImage: "pencil.and.ruler.fill")
-                .font(.title2.bold())
-                .foregroundColor(.accentColor)
-            
-            ZStack(alignment: .leading) {
-                if title.isEmpty {
-                    Text("描述你的新任务")
-                        .foregroundColor(.gray.opacity(0.75))
-                        .opacity(title.isEmpty ? 1.0 : 0.0)
-                        .animation(.easeInOut(duration: 0.3), value: title.isEmpty)
+        VStack(alignment: .leading, spacing: 16) {
+            sectionHeader(title: "任务详情", subtitle: "Task Details", icon: "pencil.and.outline")
+
+            // Title Input
+            VStack(alignment: .leading, spacing: 8) {
+                Text("标题")
+                    .font(.cosmicCaption)
+                    .foregroundColor(.cosmicTextMuted)
+
+                ZStack(alignment: .leading) {
+                    if title.isEmpty {
+                        Text("描述你的新任务...")
+                            .font(.cosmicBody)
+                            .foregroundColor(.cosmicTextMuted)
+                    }
+                    TextField("", text: $title)
+                        .font(.cosmicBody)
+                        .foregroundColor(.cosmicTextPrimary)
+                        .focused($isTitleFocused)
                 }
-                TextField("", text: $title)
+                .padding(16)
+                .background(
+                    RoundedRectangle(cornerRadius: 14)
+                        .fill(Color.cosmicSurface)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14)
+                                .stroke(isTitleFocused ? Color.electricCyan.opacity(0.5) : Color.clear, lineWidth: 1)
+                        )
+                )
             }
-            .padding()
-            .background(Color.gray.opacity(0.1))
-            .cornerRadius(10)
 
-            Section(header: Text("描述")) {
+            // Description Input
+            VStack(alignment: .leading, spacing: 8) {
+                Text("描述（可选）")
+                    .font(.cosmicCaption)
+                    .foregroundColor(.cosmicTextMuted)
+
                 ZStack(alignment: .topLeading) {
-                    TextEditor(text: $description)
-                    .frame(minHeight: 100)
-                    .padding(4)
-
                     if description.isEmpty {
-                        Text("描述你的任务细节/注意事项")
-                            .foregroundColor(.gray.opacity(0.6))
-                            .padding(8)
-                            .allowsHitTesting(false)
-                            .opacity(description.isEmpty ? 1.0 : 0.0)
-                            .animation(.easeInOut(duration: 0.3), value: description.isEmpty)
+                        Text("添加更多细节或注意事项...")
+                            .font(.cosmicSubheadline)
+                            .foregroundColor(.cosmicTextMuted)
+                            .padding(.top, 8)
+                            .padding(.leading, 4)
+                    }
+                    TextEditor(text: $description)
+                        .font(.cosmicSubheadline)
+                        .foregroundColor(.cosmicTextPrimary)
+                        .scrollContentBackground(.hidden)
+                        .frame(minHeight: 80)
+                }
+                .padding(12)
+                .background(
+                    RoundedRectangle(cornerRadius: 14)
+                        .fill(Color.cosmicSurface)
+                )
+            }
+        }
+    }
+
+    // MARK: - Priority Section
+    private var prioritySection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            sectionHeader(title: "优先级", subtitle: "Priority", icon: "flag.fill")
+
+            HStack(spacing: 10) {
+                ForEach(Priority.allCases, id: \.self) { p in
+                    PriorityButton(
+                        priority: p,
+                        isSelected: priority == p
+                    ) {
+                        withAnimation(.spring(response: 0.3)) {
+                            priority = p
+                        }
                     }
                 }
-                .background(Color(UIColor.secondarySystemBackground))
-                .cornerRadius(8)
-                .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
             }
-            
-            Picker("优先级", selection: $priority) {
-                ForEach(Priority.allCases, id: \.self) { p in
-                    Text(p.rawValue)
-                }
-            }
-            .pickerStyle(.segmented)
         }
     }
-    
-    private var dueDateSection: some View {
-        VStack(alignment: .leading, spacing: 15) {
-            Label("截止日期", systemImage: "calendar.badge.clock")
-                .font(.title2.bold())
-                .foregroundColor(.accentColor)
 
-            Toggle("设置截止时间", isOn: Binding(
-                get: { dueDate != nil },
-                set: { enabled in setDueDate(enabled: enabled) }
-            ))
-            .tint(.accentColor)
+    // MARK: - Due Date Section
+    private var dueDateSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            sectionHeader(title: "截止日期", subtitle: "Due Date", icon: "calendar.badge.clock")
+
+            // Toggle
+            HStack {
+                Text("设置截止时间")
+                    .font(.cosmicSubheadline)
+                    .foregroundColor(.cosmicTextSecondary)
+
+                Spacer()
+
+                Toggle("", isOn: Binding(
+                    get: { dueDate != nil },
+                    set: { enabled in setDueDate(enabled: enabled) }
+                ))
+                .tint(.electricCyan)
+            }
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(Color.cosmicSurface)
+            )
 
             if dueDate != nil {
-                DatePicker("截止日期", selection: Binding(
-                    get: { dueDate ?? Date() },
-                    set: { dueDate = $0 }
-                ), displayedComponents: dueDateHasTime ? [.date, .hourAndMinute] : .date)
-                .datePickerStyle(.graphical)
-                
-                Toggle("设置特定时间", isOn: $dueDateHasTime.animation())
-                    .tint(.accentColor)
+                VStack(spacing: 12) {
+                    DatePicker(
+                        "",
+                        selection: Binding(
+                            get: { dueDate ?? Date() },
+                            set: { dueDate = $0 }
+                        ),
+                        displayedComponents: dueDateHasTime ? [.date, .hourAndMinute] : .date
+                    )
+                    .datePickerStyle(.graphical)
+                    .tint(.electricCyan)
+                    .padding(16)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(Color.cosmicSurface)
+                    )
+
+                    // Time Toggle
+                    HStack {
+                        Text("设置特定时间")
+                            .font(.cosmicSubheadline)
+                            .foregroundColor(.cosmicTextSecondary)
+
+                        Spacer()
+
+                        Toggle("", isOn: $dueDateHasTime.animation())
+                            .tint(.cosmicLavender)
+                    }
+                    .padding(16)
+                    .background(
+                        RoundedRectangle(cornerRadius: 14)
+                            .fill(Color.cosmicSurface)
+                    )
+                }
+                .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
     }
-    
-    private var subtasksSection: some View {
-        VStack(alignment: .leading, spacing: 15) {
-            Label("子任务", systemImage: "checklist")
-                .font(.title2.bold())
-                .foregroundColor(.accentColor)
 
+    // MARK: - Subtasks Section
+    private var subtasksSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            sectionHeader(title: "子任务", subtitle: "Subtasks", icon: "checklist")
+
+            // Existing Subtasks
             ForEach(subtasks.indices, id: \.self) { index in
-                HStack {
+                HStack(spacing: 12) {
                     Image(systemName: "circle")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.cosmicTextMuted)
+
                     TextField("子任务", text: $subtasks[index].title)
-                    Button(role: .destructive) {
-                        subtasks.remove(at: index)
-                    } label: {
+                        .font(.cosmicSubheadline)
+                        .foregroundColor(.cosmicTextPrimary)
+
+                    Button(action: {
+                        withAnimation(.spring(response: 0.3)) {
+                            _ = subtasks.remove(at: index)
+                        }
+                    }) {
                         Image(systemName: "minus.circle.fill")
+                            .font(.system(size: 20))
+                            .foregroundColor(.pulseDanger.opacity(0.8))
                     }
                 }
-                .padding()
-                .background(Color.gray.opacity(0.1))
-                .cornerRadius(10)
+                .padding(14)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.cosmicSurface)
+                )
             }
-            
-            HStack {
+
+            // New Subtask Input
+            HStack(spacing: 12) {
                 ZStack(alignment: .leading) {
                     if newSubtaskTitle.isEmpty {
-                        Text("新的子任务...")
-                            .foregroundColor(.gray.opacity(0.6))
-                            .opacity(newSubtaskTitle.isEmpty ? 1.0 : 0.0)
-                            .animation(.easeInOut(duration: 0.3), value: newSubtaskTitle.isEmpty)
+                        Text("添加子任务...")
+                            .font(.cosmicSubheadline)
+                            .foregroundColor(.cosmicTextMuted)
                     }
                     TextField("", text: $newSubtaskTitle)
+                        .font(.cosmicSubheadline)
+                        .foregroundColor(.cosmicTextPrimary)
                 }
-                .padding()
-                .background(Color.gray.opacity(0.1))
-                .cornerRadius(10)
-                
+                .padding(14)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.cosmicSurface)
+                )
+
                 Button(action: {
                     if !newSubtaskTitle.isEmpty {
-                        subtasks.append(Subtask(title: newSubtaskTitle))
-                        newSubtaskTitle = ""
+                        withAnimation(.spring(response: 0.3)) {
+                            subtasks.append(Subtask(title: newSubtaskTitle))
+                            newSubtaskTitle = ""
+                        }
                     }
                 }) {
                     Image(systemName: "plus.circle.fill")
-                        .font(.title)
-                        .foregroundColor(.accentColor)
+                        .font(.system(size: 28))
+                        .foregroundColor(.electricCyan)
                 }
+                .disabled(newSubtaskTitle.isEmpty)
+                .opacity(newSubtaskTitle.isEmpty ? 0.5 : 1)
             }
         }
     }
-    
+
+    // MARK: - Section Header
+    private func sectionHeader(title: String, subtitle: String, icon: String) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: icon)
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundColor(.electricCyan)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.cosmicHeadline)
+                    .foregroundColor(.cosmicTextPrimary)
+
+                Text(subtitle)
+                    .font(.cosmicCaption2)
+                    .foregroundColor(.cosmicTextMuted)
+                    .textCase(.uppercase)
+                    .tracking(1)
+            }
+        }
+    }
+
     // MARK: - Functions
     private func saveTask() {
-        // 保存最后输入的子任务（如果有的话）
         if !newSubtaskTitle.isEmpty {
             subtasks.append(Subtask(title: newSubtaskTitle))
-            newSubtaskTitle = "" // 清空输入框
+            newSubtaskTitle = ""
         }
-        
-        // 移除空的子任务
+
         subtasks.removeAll { $0.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-        
+
         let finalDescription = description.isEmpty ? nil : description
-        
-        // 创建新任务并包含子任务
+
         let newTask = Task(
             title: title,
             description: finalDescription,
@@ -191,16 +327,13 @@ struct AddTaskView: View {
             priority: priority,
             subtasks: subtasks
         )
-        
-        // 添加到任务管理器
+
         taskManager.tasks.append(newTask)
-        
-        // Dismiss the view
         dismiss()
     }
-    
+
     private func setDueDate(enabled: Bool) {
-        withAnimation {
+        withAnimation(.spring(response: 0.3)) {
             if !enabled {
                 dueDate = nil
                 dueDateHasTime = false
@@ -209,5 +342,51 @@ struct AddTaskView: View {
             }
         }
     }
-} 
- 
+}
+
+// MARK: - Priority Button Component
+struct PriorityButton: View {
+    let priority: Priority
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 8) {
+                Image(systemName: priority.icon)
+                    .font(.system(size: 20, weight: .semibold))
+
+                Text(priority.rawValue)
+                    .font(.cosmicCaption)
+            }
+            .foregroundColor(isSelected ? .cosmicBlack : priority.cosmicColor)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 16)
+            .background(
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(isSelected ? priority.cosmicColor : priority.cosmicColor.opacity(0.12))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(isSelected ? Color.clear : priority.cosmicColor.opacity(0.3), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Priority Icon Extension
+extension Priority {
+    var icon: String {
+        switch self {
+        case .high: return "exclamationmark.2"
+        case .medium: return "equal"
+        case .low: return "chevron.down"
+        }
+    }
+}
+
+#Preview {
+    AddTaskView(taskManager: TaskManager())
+        .preferredColorScheme(.dark)
+}

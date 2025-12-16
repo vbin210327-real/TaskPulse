@@ -1,11 +1,13 @@
 // Colors.swift
 // TaskPulse
 //
-// Created by AI Assistant.
+// Legacy color definitions (kept for compatibility)
+// Primary design system is now in DesignSystem.swift
 
 import SwiftUI
 
 extension Color {
-    static let lightBlue = Color(red: 0.3, green: 0.6, blue: 1.0)
-    static let vibrantGold = Color(red: 1.0, green: 0.84, blue: 0.0) // 活力金色
-} 
+    // Legacy colors - mapped to new design system
+    static let lightBlue = Color.electricCyan
+    static let vibrantGold = Color.cosmicAmber
+}
