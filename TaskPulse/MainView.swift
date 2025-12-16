@@ -20,11 +20,6 @@ struct MainView: View {
                 NoiseOverlay()
 
                 VStack(spacing: 0) {
-                    // Custom cosmic tab bar
-                    cosmicTabBar
-                        .padding(.horizontal, 20)
-                        .padding(.top, 8)
-
                     // Content
                     TabView(selection: $selectedTab) {
                         DashboardView(taskManager: taskManager, taskToAnimate: $taskToAnimate) { status in
@@ -37,6 +32,11 @@ struct MainView: View {
                             .tag(1)
                     }
                     .tabViewStyle(.page(indexDisplayMode: .never))
+                    .safeAreaInset(edge: .bottom, spacing: 0) {
+                        cosmicTabBar
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 10)
+                    }
                 }
             }
             .environmentObject(taskManager)
