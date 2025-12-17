@@ -202,9 +202,11 @@ class TaskManager: ObservableObject {
 private enum TaskDueSoonNotifications {
     private static let enableKey = "enableDueSoonNotifications"
     private static let identifierPrefix = "taskpulse.dueSoon."
+    private static let planKey = "dueSoonNotificationPlans"
     private static let maxScheduledNotifications = 60
     private static let leadTimeWithTime: TimeInterval = 60 * 60 // 1 hour
     private static let fireHourWithoutTime = 18 // 18:00 on due day
+    private static let minimumScheduleDelay: TimeInterval = 5
 
     private static let center = UNUserNotificationCenter.current()
 
@@ -244,9 +246,25 @@ private enum TaskDueSoonNotifications {
             return
         }
 
+        let now = Date()
+        let calendar = Calendar.current
+
+        var storedPlans = loadPlans()
+        let existingTaskIds = Set(tasks.map { $0.id.uuidString })
+        storedPlans = storedPlans.filter { existingTaskIds.contains($0.key) }
+
+        let plansToSchedule = upsertPlansAndBuildRequests(
+            tasks: tasks,
+            now: now,
+            calendar: calendar,
+            storedPlans: &storedPlans
+        )
+
+        savePlans(storedPlans)
+
         await removeAllManagedNotifications()
 
-        let plans = buildPlans(tasks: tasks)
+        let plans = plansToSchedule
             .sorted { $0.fireDate < $1.fireDate }
             .prefix(maxScheduledNotifications)
 
@@ -260,7 +278,6 @@ private enum TaskDueSoonNotifications {
         let ids = pending.map(\.identifier).filter { $0.hasPrefix(identifierPrefix) }
         guard !ids.isEmpty else { return }
         center.removePendingNotificationRequests(withIdentifiers: ids)
-        center.removeDeliveredNotifications(withIdentifiers: ids)
     }
 
     private struct Plan {
@@ -268,64 +285,119 @@ private enum TaskDueSoonNotifications {
         let request: UNNotificationRequest
     }
 
-    private static func buildPlans(tasks: [Task]) -> [Plan] {
-        let now = Date()
-        let calendar = Calendar.current
+    private struct StoredPlan: Codable {
+        let dueTimestamp: TimeInterval
+        let fireTimestamp: TimeInterval?
+    }
 
-        return tasks.compactMap { task in
-            guard !task.completed, let dueDate = task.dueDate else { return nil }
+    private static func upsertPlansAndBuildRequests(
+        tasks: [Task],
+        now: Date,
+        calendar: Calendar,
+        storedPlans: inout [String: StoredPlan]
+    ) -> [Plan] {
+        tasks.compactMap { task in
+            let key = task.id.uuidString
 
-            guard let schedule = scheduleDates(
-                dueDate: dueDate,
-                dueDateHasTime: task.dueDateHasTime,
-                now: now,
-                calendar: calendar
-            ) else {
+            guard !task.completed, let dueDate = task.dueDate else {
+                storedPlans.removeValue(forKey: key)
                 return nil
             }
 
-            let identifier = identifierPrefix + task.id.uuidString
-            let content = makeContent(taskTitle: task.title, dueDateHasTime: task.dueDateHasTime, dueDate: schedule.dueDate)
+            guard let dueMoment = dueMoment(dueDate: dueDate, dueDateHasTime: task.dueDateHasTime, calendar: calendar) else {
+                storedPlans.removeValue(forKey: key)
+                return nil
+            }
 
-            let components = calendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: schedule.fireDate)
+            guard dueMoment > now else {
+                storedPlans.removeValue(forKey: key)
+                return nil
+            }
+
+            let dueTimestamp = dueMoment.timeIntervalSince1970
+
+            let planToUse: StoredPlan
+            if let existing = storedPlans[key], existing.dueTimestamp == dueTimestamp {
+                planToUse = existing
+            } else {
+                let desired = desiredFireDate(
+                    dueDate: dueDate,
+                    dueDateHasTime: task.dueDateHasTime,
+                    dueMoment: dueMoment,
+                    calendar: calendar
+                )
+
+                let fireDate: Date?
+                if desired > now.addingTimeInterval(minimumScheduleDelay) {
+                    fireDate = desired
+                } else {
+                    let immediate = now.addingTimeInterval(minimumScheduleDelay)
+                    fireDate = immediate < dueMoment ? immediate : nil
+                }
+
+                let stored = StoredPlan(dueTimestamp: dueTimestamp, fireTimestamp: fireDate?.timeIntervalSince1970)
+                storedPlans[key] = stored
+                planToUse = stored
+            }
+
+            guard let fireTimestamp = planToUse.fireTimestamp else { return nil }
+            let fireDate = Date(timeIntervalSince1970: fireTimestamp)
+
+            guard fireDate > now else { return nil }
+
+            let identifier = identifierPrefix + task.id.uuidString
+            let content = makeContent(taskTitle: task.title, dueDateHasTime: task.dueDateHasTime, dueDate: dueMoment)
+
+            let components = calendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: fireDate)
             let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
 
             let request = UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
-            return Plan(fireDate: schedule.fireDate, request: request)
+            return Plan(fireDate: fireDate, request: request)
         }
     }
 
-    private static func scheduleDates(
+    private static func dueMoment(
         dueDate: Date,
         dueDateHasTime: Bool,
-        now: Date,
         calendar: Calendar
-    ) -> (fireDate: Date, dueDate: Date)? {
-        let dueMoment: Date
+    ) -> Date? {
         if dueDateHasTime {
-            dueMoment = dueDate
+            return dueDate
         } else {
             let start = calendar.startOfDay(for: dueDate)
-            dueMoment = start.addingTimeInterval(86399)
+            return start.addingTimeInterval(86399)
         }
+    }
 
-        guard dueMoment > now else { return nil }
-
-        let minimumLead: TimeInterval = 5
-        let fireDate: Date
-
+    private static func desiredFireDate(
+        dueDate: Date,
+        dueDateHasTime: Bool,
+        dueMoment: Date,
+        calendar: Calendar
+    ) -> Date {
         if dueDateHasTime {
-            let desired = dueMoment.addingTimeInterval(-leadTimeWithTime)
-            fireDate = max(desired, now.addingTimeInterval(minimumLead))
+            return dueMoment.addingTimeInterval(-leadTimeWithTime)
         } else {
             let start = calendar.startOfDay(for: dueDate)
-            let desired = calendar.date(bySettingHour: fireHourWithoutTime, minute: 0, second: 0, of: start)
+            return calendar.date(bySettingHour: fireHourWithoutTime, minute: 0, second: 0, of: start)
                 ?? start.addingTimeInterval(TimeInterval(fireHourWithoutTime) * 3600)
-            fireDate = max(desired, now.addingTimeInterval(minimumLead))
         }
+    }
 
-        guard fireDate < dueMoment else { return nil }
-        return (fireDate: fireDate, dueDate: dueMoment)
+    private static func loadPlans() -> [String: StoredPlan] {
+        guard let data = UserDefaults.standard.data(forKey: planKey),
+              let decoded = try? JSONDecoder().decode([String: StoredPlan].self, from: data) else {
+            return [:]
+        }
+        return decoded
+    }
+
+    private static func savePlans(_ plans: [String: StoredPlan]) {
+        guard let encoded = try? JSONEncoder().encode(plans) else {
+            UserDefaults.standard.removeObject(forKey: planKey)
+            return
+        }
+        UserDefaults.standard.set(encoded, forKey: planKey)
     }
 
     private static func makeContent(taskTitle: String, dueDateHasTime: Bool, dueDate: Date) -> UNMutableNotificationContent {
