@@ -5,10 +5,20 @@
 
 import SwiftUI
 
+#if canImport(UIKit)
+import UIKit
+#endif
+
+import _Concurrency
+
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var taskManager: TaskManager
 
     @AppStorage("enableCompletionEffect") private var enableCompletionEffect = true
+    @AppStorage("enableDueSoonNotifications") private var enableDueSoonNotifications = true
+
+    @State private var showingNotificationsPermissionAlert = false
 
     var body: some View {
         NavigationStack {
@@ -25,6 +35,17 @@ struct SettingsView: View {
                                 icon: "bolt.fill",
                                 color: .electricCyan,
                                 isOn: $enableCompletionEffect
+                            )
+                        }
+
+                        // Notifications Section
+                        settingsSection(title: "通知", subtitle: "Notifications", icon: "bell.badge.fill") {
+                            SettingsToggleRow(
+                                title: "即将逾期提醒",
+                                subtitle: "任务接近截止时发送通知",
+                                icon: "bell.fill",
+                                color: .cosmicAmber,
+                                isOn: $enableDueSoonNotifications
                             )
                         }
 
@@ -96,6 +117,32 @@ struct SettingsView: View {
             .toolbarBackground(Color.cosmicDeep, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
         }
+        .onChange(of: enableDueSoonNotifications) { _, newValue in
+            _Concurrency.Task { @MainActor in
+                if newValue {
+                    let granted = await taskManager.requestDueSoonNotificationsAuthorizationAndSync()
+                    if !granted {
+                        enableDueSoonNotifications = false
+                        showingNotificationsPermissionAlert = true
+                    }
+                } else {
+                    taskManager.syncDueSoonNotifications()
+                }
+            }
+        }
+        .alert("无法启用通知", isPresented: $showingNotificationsPermissionAlert) {
+            Button("打开设置") { openAppSettings() }
+            Button("好", role: .cancel) {}
+        } message: {
+            Text("请在系统设置中允许 TaskPulse 发送通知。")
+        }
+    }
+
+    private func openAppSettings() {
+#if canImport(UIKit)
+        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+        UIApplication.shared.open(url)
+#endif
     }
 
     // MARK: - Settings Section
@@ -216,5 +263,6 @@ struct SettingsNavigationRow: View {
 
 #Preview {
     SettingsView()
+        .environmentObject(TaskManager())
         .preferredColorScheme(.dark)
 }

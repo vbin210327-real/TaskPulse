@@ -55,7 +55,7 @@ struct DashboardView: View {
                 .textCase(.uppercase)
                 .tracking(1.5)
 
-            Text("任务脉搏")
+            Text("TaskPulse")
                 .font(.cosmicLargeTitle)
                 .foregroundColor(.cosmicTextPrimary)
         }

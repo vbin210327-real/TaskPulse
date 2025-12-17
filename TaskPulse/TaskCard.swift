@@ -13,6 +13,7 @@ struct TaskCard: View {
     var onToggleSubtask: ((UUID) -> Void)? = nil
     @State private var isExpanded = false
     @State private var isHovered = false
+    @State private var showingDeleteConfirmation = false
 
     // MARK: - Computed Properties
     private var accentColor: Color {
@@ -65,6 +66,14 @@ struct TaskCard: View {
         .overlay(cardBorder)
         .shadow(color: accentColor.opacity(0.15), radius: 12, x: 0, y: 6)
         .shadow(color: Color.black.opacity(0.3), radius: 8, x: 0, y: 4)
+        .alert("删除任务？", isPresented: $showingDeleteConfirmation) {
+            Button("删除", role: .destructive) {
+                onDelete?()
+            }
+            Button("取消", role: .cancel) {}
+        } message: {
+            Text("确定要删除“\(task.title)”吗？你可以在“最近删除”中恢复。")
+        }
     }
 
     // MARK: - Header Row
@@ -179,8 +188,10 @@ struct TaskCard: View {
                     actionButton(icon: "pencil", color: .cosmicLavender, action: onEdit)
                 }
 
-                if let onDelete = onDelete {
-                    actionButton(icon: "trash", color: .pulseDanger.opacity(0.8), action: onDelete)
+                if onDelete != nil {
+                    actionButton(icon: "trash", color: .pulseDanger.opacity(0.8)) {
+                        showingDeleteConfirmation = true
+                    }
                 }
 
                 if let onToggleComplete = onToggleComplete {

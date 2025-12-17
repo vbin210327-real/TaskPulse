@@ -5,6 +5,10 @@
 
 import SwiftUI
 
+#if canImport(UIKit)
+import UIKit
+#endif
+
 struct CompletionEffect: View {
     let task: Task
     @Binding var taskToAnimate: Task?
@@ -125,12 +129,15 @@ struct CompletionEffect: View {
     }
 
     private func runAnimationSequence() {
+        Haptics.prepare()
+
         // 0. Show particles
         withAnimation(.easeIn(duration: 0.3)) {
             particlesVisible = true
         }
 
         // 1. Show the laser and animate its path across the card
+        Haptics.impact(.light)
         withAnimation(.linear(duration: 0.5)) {
             showLaser = true
             laserPathProgress = 1.0
@@ -138,6 +145,7 @@ struct CompletionEffect: View {
 
         // 2. A moment after the laser starts, make the pieces fly apart and show the text
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+            Haptics.notification(.success)
             withAnimation(.easeOut(duration: 1.2)) {
                 cardPiecesFlyOff = true
             }
@@ -160,6 +168,68 @@ struct CompletionEffect: View {
                 taskToAnimate = nil
             }
         }
+    }
+}
+
+@MainActor
+private enum Haptics {
+#if canImport(UIKit)
+    private static let lightImpactGenerator = UIImpactFeedbackGenerator(style: .light)
+    private static let mediumImpactGenerator = UIImpactFeedbackGenerator(style: .medium)
+    private static let heavyImpactGenerator = UIImpactFeedbackGenerator(style: .heavy)
+    private static let notificationGenerator = UINotificationFeedbackGenerator()
+#endif
+
+    static func prepare() {
+#if canImport(UIKit)
+        lightImpactGenerator.prepare()
+        notificationGenerator.prepare()
+#endif
+    }
+
+    static func impact(_ style: ImpactStyle) {
+#if canImport(UIKit)
+        let generator: UIImpactFeedbackGenerator
+        switch style {
+        case .light:
+            generator = lightImpactGenerator
+        case .medium:
+            generator = mediumImpactGenerator
+        case .heavy:
+            generator = heavyImpactGenerator
+        }
+        generator.prepare()
+        generator.impactOccurred()
+#endif
+    }
+
+    static func notification(_ type: NotificationType) {
+#if canImport(UIKit)
+        notificationGenerator.prepare()
+        notificationGenerator.notificationOccurred(type.uiKitType)
+#endif
+    }
+
+    enum ImpactStyle {
+        case light
+        case medium
+        case heavy
+    }
+
+    enum NotificationType {
+        case success
+        case warning
+        case error
+
+#if canImport(UIKit)
+        fileprivate var uiKitType: UINotificationFeedbackGenerator.FeedbackType {
+            switch self {
+            case .success: return .success
+            case .warning: return .warning
+            case .error: return .error
+            }
+        }
+#endif
     }
 }
 

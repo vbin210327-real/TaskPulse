@@ -44,6 +44,9 @@ struct MainView: View {
         }
         .environmentObject(taskManager)
         .preferredColorScheme(.dark)
+        .task {
+            _ = await taskManager.requestDueSoonNotificationsAuthorizationAndSync()
+        }
         .overlay {
             if let task = taskToAnimate {
                 CompletionEffect(
