@@ -74,7 +74,7 @@ struct AddTaskView: View {
     // MARK: - Task Details Section
     private var taskDetailsSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            sectionHeader(title: "任务详情", subtitle: "Task Details", icon: "pencil.and.outline")
+            sectionHeader(title: "任务详情", icon: "pencil.and.outline")
 
             // Title Input
             VStack(alignment: .leading, spacing: 8) {
@@ -136,7 +136,7 @@ struct AddTaskView: View {
     // MARK: - Priority Section
     private var prioritySection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            sectionHeader(title: "优先级", subtitle: "Priority", icon: "flag.fill")
+            sectionHeader(title: "优先级", icon: "flag.fill")
 
             HStack(spacing: 10) {
                 ForEach(Priority.allCases, id: \.self) { p in
@@ -156,7 +156,7 @@ struct AddTaskView: View {
     // MARK: - Due Date Section
     private var dueDateSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            sectionHeader(title: "截止日期", subtitle: "Due Date", icon: "calendar.badge.clock")
+            sectionHeader(title: "截止日期", icon: "calendar.badge.clock")
 
             // Toggle
             HStack {
@@ -221,7 +221,7 @@ struct AddTaskView: View {
     // MARK: - Subtasks Section
     private var subtasksSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            sectionHeader(title: "子任务", subtitle: "Subtasks", icon: "checklist")
+            sectionHeader(title: "子任务", icon: "checklist")
 
             // Existing Subtasks
             ForEach(subtasks.indices, id: \.self) { index in
@@ -288,7 +288,7 @@ struct AddTaskView: View {
     }
 
     // MARK: - Section Header
-    private func sectionHeader(title: String, subtitle: String, icon: String) -> some View {
+    private func sectionHeader(title: String, icon: String) -> some View {
         HStack(spacing: 10) {
             Image(systemName: icon)
                 .font(.system(size: 18, weight: .semibold))
@@ -298,12 +298,6 @@ struct AddTaskView: View {
                 Text(title)
                     .font(.cosmicHeadline)
                     .foregroundColor(.cosmicTextPrimary)
-
-                Text(subtitle)
-                    .font(.cosmicCaption2)
-                    .foregroundColor(.cosmicTextMuted)
-                    .textCase(.uppercase)
-                    .tracking(1)
             }
         }
     }

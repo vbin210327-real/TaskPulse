@@ -52,8 +52,21 @@ struct HeartCurveShape: Shape {
 
 struct HeartbeatProgressView: View {
     var progress: Double
+    var isActive: Bool
+
+    @State private var displayedProgress: Double
+    @State private var pendingProgress: Double? = nil
+    @State private var isIncreaseBumping = false
+
+    init(progress: Double, isActive: Bool = true) {
+        self.progress = progress
+        self.isActive = isActive
+        _displayedProgress = State(initialValue: 0) // Start at 0 for initial filling animation
+    }
 
     var body: some View {
+        let clampedProgress = min(max(progress, 0), 1)
+
         VStack(spacing: 16) {
             // Header
             HStack {
@@ -61,21 +74,17 @@ struct HeartbeatProgressView: View {
                     Text("平均进度")
                         .font(.cosmicTitle3)
                         .foregroundColor(.cosmicTextPrimary)
-
-                    Text("Average Progress")
-                        .font(.cosmicCaption2)
-                        .foregroundColor(.cosmicTextMuted)
-                        .textCase(.uppercase)
-                        .tracking(1)
                 }
 
                 Spacer()
 
                 // Progress Value
-                Text("\(Int(progress * 100))%")
+                AnimatedPercentageText(progress: displayedProgress)
                     .font(.cosmicMonoLarge)
-                    .foregroundColor(.electricCyan)
-                    .contentTransition(.numericText(value: progress * 100))
+                    .foregroundColor(Color(red: 0.63, green: 0.93, blue: 0.82)) // Teal from screenshot
+                    .scaleEffect(isIncreaseBumping ? 1.08 : 1.0)
+                    .shadow(color: Color(red: 0.63, green: 0.93, blue: 0.82).opacity(isIncreaseBumping ? 0.45 : 0.2), radius: isIncreaseBumping ? 18 : 10)
+                    .animation(.spring(response: 0.35, dampingFraction: 0.65), value: isIncreaseBumping)
             }
 
             // Heartbeat Line
@@ -89,38 +98,91 @@ struct HeartbeatProgressView: View {
 
                 // Actual progress (no glow)
                 HeartCurveShape()
-                    .trim(from: 0, to: progress)
+                    .trim(from: 0, to: displayedProgress)
                     .stroke(
                         LinearGradient(
-                            colors: [.electricCyan, .cosmicLavender],
+                            colors: [
+                                Color(red: 0.63, green: 0.93, blue: 0.82), // Teal
+                                Color(red: 1.0, green: 0.70, blue: 0.50),  // Peach
+                                Color(red: 0.88, green: 0.69, blue: 1.0)   // Lavender
+                            ],
                             startPoint: .leading,
                             endPoint: .trailing
                         ),
                         style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round)
                     )
-                    .animation(.easeInOut(duration: 0.3), value: progress)
             }
             .frame(height: 100)
 
-            // Mini stats
-            HStack(spacing: 20) {
-                miniStat(icon: "waveform.path.ecg", label: "活跃", color: .electricCyan)
-                miniStat(icon: "heart.fill", label: "健康", color: .pulseDanger)
-                miniStat(icon: "bolt.fill", label: "高效", color: .cosmicAmber)
+        }
+        .onAppear {
+            guard isActive else { return }
+            // Add a small delay to avoid clashing with the screen's stagger entrance
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                let target = pendingProgress ?? clampedProgress
+                pendingProgress = nil
+                guard target != displayedProgress else { return }
+                applyProgressUpdate(to: target, animated: true)
+            }
+        }
+        .onChange(of: clampedProgress) { _, newValue in
+            if isActive {
+                applyProgressUpdate(to: newValue, animated: true)
+            } else {
+                pendingProgress = newValue
+            }
+        }
+        .onChange(of: isActive) { _, newValue in
+            guard newValue else { return }
+            // Add a small delay to ensure tab switching animation or sheet dismissal is done
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                let target = pendingProgress ?? clampedProgress
+                pendingProgress = nil
+                guard target != displayedProgress else { return }
+                applyProgressUpdate(to: target, animated: true)
             }
         }
     }
 
-    private func miniStat(icon: String, label: String, color: Color) -> some View {
-        HStack(spacing: 6) {
-            Image(systemName: icon)
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundColor(color)
 
-            Text(label)
-                .font(.cosmicCaption2)
-                .foregroundColor(.cosmicTextMuted)
+    private func applyProgressUpdate(to newValue: Double, animated: Bool) {
+        let clampedValue = min(max(newValue, 0), 1)
+        let oldValue = displayedProgress
+
+        if animated {
+            withAnimation(.easeInOut(duration: 0.55)) {
+                displayedProgress = clampedValue
+            }
+        } else {
+            displayedProgress = clampedValue
         }
+
+        guard clampedValue > oldValue else { return }
+        triggerIncreaseBump()
+    }
+
+    private func triggerIncreaseBump() {
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.65)) {
+            isIncreaseBumping = true
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+            withAnimation(.easeOut(duration: 0.25)) {
+                isIncreaseBumping = false
+            }
+        }
+    }
+}
+
+private struct AnimatedPercentageText: View, Animatable {
+    var progress: Double
+
+    var animatableData: Double {
+        get { progress }
+        set { progress = newValue }
+    }
+
+    var body: some View {
+        Text("\(Int((min(max(progress, 0), 1)) * 100))%")
     }
 }
 

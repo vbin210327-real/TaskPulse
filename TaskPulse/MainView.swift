@@ -20,7 +20,7 @@ struct MainView: View {
 
             TabView(selection: $selectedTab) {
                 NavigationStack {
-                    DashboardView(taskManager: taskManager, taskToAnimate: $taskToAnimate) { status in
+                    DashboardView(taskManager: taskManager, taskToAnimate: $taskToAnimate, isActive: selectedTab == 0 && !showingFilteredTasks) { status in
                         filterToApply = status
                         showingFilteredTasks = true
                     }

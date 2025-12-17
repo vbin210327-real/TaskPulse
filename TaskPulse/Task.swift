@@ -69,7 +69,10 @@ class Task: Identifiable, Codable, ObservableObject, Equatable {
             return 0.0
         } else {
             let completedCount = subtasks.filter { $0.completed }.count
-            return Double(completedCount) / Double(subtasks.count)
+            let calculated = Double(completedCount) / Double(subtasks.count)
+            // If all subtasks are done but the parent task isn't marked as 'completed' yet,
+            // cap it at 0.99 to avoid showing "100%" erroneously in the UI.
+            return min(calculated, 0.99)
         }
     }
     

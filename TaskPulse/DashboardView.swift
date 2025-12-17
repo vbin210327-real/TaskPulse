@@ -9,6 +9,7 @@ import Charts
 struct DashboardView: View {
     @ObservedObject var taskManager: TaskManager
     @Binding var taskToAnimate: Task?
+    var isActive: Bool = true
     var onCardTapped: ((FilterView.TaskStatus) -> Void)? = nil
     @AppStorage("enableCompletionEffect") private var enableCompletionEffect = true
 
@@ -81,32 +82,28 @@ struct DashboardView: View {
                 icon: "square.stack.3d.up.fill",
                 color: .electricCyan,
                 value: totalTasks,
-                label: "总任务",
-                subtitle: "All Tasks"
+                label: "总任务"
             )
 
             StatsCard(
                 icon: "checkmark.seal.fill",
                 color: .pulseSuccess,
                 value: completedTasks,
-                label: "已完成",
-                subtitle: "Completed"
+                label: "已完成"
             )
 
             StatsCard(
                 icon: "bolt.fill",
                 color: .cosmicAmber,
                 value: inProgressTasks,
-                label: "进行中",
-                subtitle: "In Progress"
+                label: "进行中"
             )
 
             StatsCard(
                 icon: "exclamationmark.octagon.fill",
                 color: .pulseDanger,
                 value: overdueTasks,
-                label: "逾期",
-                subtitle: "Overdue"
+                label: "逾期"
             )
         }
     }
@@ -115,28 +112,12 @@ struct DashboardView: View {
     private var progressSection: some View {
         VStack(spacing: 20) {
             // Heartbeat Progress
-            HeartbeatProgressView(progress: taskManager.averageProgress)
+            HeartbeatProgressView(progress: taskManager.averageProgress, isActive: isActive)
                 .cosmicCard(padding: 20)
 
-            // Planet Completion Rate
-            VStack(spacing: 16) {
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("完成率")
-                            .font(.cosmicTitle3)
-                            .foregroundColor(.cosmicTextPrimary)
-                        Text("Completion Rate")
-                            .font(.cosmicCaption)
-                            .foregroundColor(.cosmicTextMuted)
-                            .textCase(.uppercase)
-                            .tracking(1)
-                    }
-                    Spacer()
-                }
 
-                PlanetProgressView(progress: taskManager.completionRate)
-            }
-            .cosmicCard(padding: 20)
+            FortuneMeterView(luckValue: taskManager.luckValue, isActive: isActive)
+                .cosmicCard(padding: 20, clipsContent: true)
         }
     }
 
@@ -172,6 +153,12 @@ struct DashboardView: View {
                             withAnimation {
                                 taskManager.toggleCompletion(for: task)
                             }
+                        }
+                    },
+                    onToggleSubtask: { subtaskId in
+                        let taskCompleted = taskManager.toggleSubtaskCompletion(taskId: task.id, subtaskId: subtaskId)
+                        if taskCompleted && enableCompletionEffect {
+                            taskToAnimate = task
                         }
                     }
                 )

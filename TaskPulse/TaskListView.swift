@@ -22,16 +22,30 @@ struct TaskListView: View {
     @State private var filterPriority: Priority? = nil
     @State private var filterStartDate: Date? = nil
     @State private var filterEndDate: Date? = nil
-    @AppStorage("savedActiveFilter") private var savedActiveFilterRaw: String = "inProgress"
+    @AppStorage("savedActiveFilter") private var savedActiveFilterRaw: String = FilterView.TaskStatus.inProgress.rawValue
+    @AppStorage("savedFilterPriority") private var savedFilterPriorityRaw: String = ""
 
-    private var savedActiveFilter: FilterView.TaskStatus? {
-        get {
-            FilterView.TaskStatus(rawValue: savedActiveFilterRaw)
-        }
-        set {
-            savedActiveFilterRaw = newValue?.rawValue ?? "inProgress"
-        }
-    }
+    private let allFilterSentinel = "__all__"
+
+	private var savedActiveFilter: FilterView.TaskStatus? {
+		get {
+			if savedActiveFilterRaw == allFilterSentinel { return nil }
+			if savedActiveFilterRaw == "inProgress" { return .inProgress } // Legacy value
+			return FilterView.TaskStatus(rawValue: savedActiveFilterRaw)
+		}
+		nonmutating set {
+			savedActiveFilterRaw = newValue?.rawValue ?? allFilterSentinel
+		}
+	}
+
+	private var savedFilterPriority: Priority? {
+		get {
+			return savedFilterPriorityRaw.isEmpty ? nil : Priority(rawValue: savedFilterPriorityRaw)
+		}
+		nonmutating set {
+			savedFilterPriorityRaw = newValue?.rawValue ?? ""
+		}
+	}
 
     var filteredTasks: [Task] {
         var tasksToFilter = taskManager.tasks
@@ -125,11 +139,20 @@ struct TaskListView: View {
                 activeFilter = filter
                 applyFilter = nil
             } else {
-                activeFilter = savedActiveFilter ?? .inProgress
+                if savedActiveFilterRaw == allFilterSentinel {
+                    activeFilter = nil
+                } else {
+                    activeFilter = savedActiveFilter ?? .inProgress
+                }
             }
+
+            filterPriority = savedFilterPriority
         }
         .onChange(of: activeFilter) { _, newValue in
-            savedActiveFilterRaw = newValue?.rawValue ?? "inProgress"
+            savedActiveFilter = newValue
+        }
+        .onChange(of: filterPriority) { _, newValue in
+            savedFilterPriority = newValue
         }
     }
 
@@ -248,10 +271,6 @@ struct TaskListView: View {
                                 let taskCompleted = taskManager.toggleSubtaskCompletion(taskId: task.id, subtaskId: subtaskId)
                                 if taskCompleted && enableCompletionEffect {
                                     taskToAnimate = task
-                                } else if taskCompleted {
-                                    withAnimation {
-                                        taskManager.toggleCompletion(for: task)
-                                    }
                                 }
                             }
                         )

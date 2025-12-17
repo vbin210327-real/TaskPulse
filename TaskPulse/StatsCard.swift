@@ -10,7 +10,6 @@ struct StatsCard: View {
     let color: Color
     let value: Int
     let label: String
-    var subtitle: String? = nil
 
     @State private var isAnimated = false
     @State private var displayedValue = 0
@@ -48,14 +47,6 @@ struct StatsCard: View {
                 Text(label)
                     .font(.cosmicCaption)
                     .foregroundColor(.cosmicTextSecondary)
-
-                if let subtitle = subtitle {
-                    Text(subtitle)
-                        .font(.cosmicCaption2)
-                        .foregroundColor(.cosmicTextMuted)
-                        .textCase(.uppercase)
-                        .tracking(0.5)
-                }
             }
         }
         .frame(maxWidth: .infinity)
@@ -166,10 +157,10 @@ struct MiniStatsCard: View {
                 GridItem(.flexible(), spacing: 12),
                 GridItem(.flexible(), spacing: 12)
             ], spacing: 12) {
-                StatsCard(icon: "square.stack.3d.up.fill", color: .electricCyan, value: 24, label: "总任务", subtitle: "All Tasks")
-                StatsCard(icon: "checkmark.seal.fill", color: .pulseSuccess, value: 18, label: "已完成", subtitle: "Completed")
-                StatsCard(icon: "bolt.fill", color: .cosmicAmber, value: 4, label: "进行中", subtitle: "In Progress")
-                StatsCard(icon: "exclamationmark.octagon.fill", color: .pulseDanger, value: 2, label: "逾期", subtitle: "Overdue")
+                StatsCard(icon: "square.stack.3d.up.fill", color: .electricCyan, value: 24, label: "总任务")
+                StatsCard(icon: "checkmark.seal.fill", color: .pulseSuccess, value: 18, label: "已完成")
+                StatsCard(icon: "bolt.fill", color: .cosmicAmber, value: 4, label: "进行中")
+                StatsCard(icon: "exclamationmark.octagon.fill", color: .pulseDanger, value: 2, label: "逾期")
             }
             .padding()
 

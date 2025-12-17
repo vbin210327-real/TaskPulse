@@ -28,7 +28,7 @@ struct SettingsView: View {
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 24) {
                         // Visual Effects Section
-                        settingsSection(title: "视觉效果", subtitle: "Visual Effects", icon: "sparkles") {
+                        settingsSection(title: "视觉效果", icon: "sparkles") {
                             SettingsToggleRow(
                                 title: "完成任务特效",
                                 subtitle: "任务完成时显示激光切割动画",
@@ -39,7 +39,7 @@ struct SettingsView: View {
                         }
 
                         // Notifications Section
-                        settingsSection(title: "通知", subtitle: "Notifications", icon: "bell.badge.fill") {
+                        settingsSection(title: "通知", icon: "bell.badge.fill") {
                             SettingsToggleRow(
                                 title: "即将逾期提醒",
                                 subtitle: "任务接近截止时发送通知",
@@ -50,7 +50,7 @@ struct SettingsView: View {
                         }
 
                         // Data Management Section
-                        settingsSection(title: "数据管理", subtitle: "Data Management", icon: "externaldrive.fill") {
+                        settingsSection(title: "数据管理", icon: "externaldrive.fill") {
                             NavigationLink(destination: RecentlyDeletedView()) {
                                 SettingsNavigationRow(
                                     title: "最近删除",
@@ -62,7 +62,7 @@ struct SettingsView: View {
                         }
 
                         // About Section
-                        settingsSection(title: "关于", subtitle: "About", icon: "info.circle.fill") {
+                        settingsSection(title: "关于", icon: "info.circle.fill") {
                             VStack(spacing: 12) {
                                 HStack {
                                     Text("版本")
@@ -148,7 +148,6 @@ struct SettingsView: View {
     // MARK: - Settings Section
     private func settingsSection<Content: View>(
         title: String,
-        subtitle: String,
         icon: String,
         @ViewBuilder content: () -> Content
     ) -> some View {
@@ -162,12 +161,6 @@ struct SettingsView: View {
                     Text(title)
                         .font(.cosmicHeadline)
                         .foregroundColor(.cosmicTextPrimary)
-
-                    Text(subtitle)
-                        .font(.cosmicCaption2)
-                        .foregroundColor(.cosmicTextMuted)
-                        .textCase(.uppercase)
-                        .tracking(1)
                 }
             }
 

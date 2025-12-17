@@ -11,6 +11,8 @@ import _Concurrency
 
 @MainActor
 class TaskManager: ObservableObject {
+    private let luckValueKey = "luckValue"
+
     @Published var tasks: [Task] = [] {
         didSet {
             saveTasks()
@@ -31,8 +33,15 @@ class TaskManager: ObservableObject {
 
     private let tasksKey = "savedTasks"
     private let recentlyDeletedTasksKey = "recentlyDeletedTasks"
+
+    @Published private(set) var luckValue: Int = 0 {
+        didSet {
+            UserDefaults.standard.set(luckValue, forKey: luckValueKey)
+        }
+    }
     
     init() {
+        luckValue = UserDefaults.standard.integer(forKey: luckValueKey)
         loadTasks()
         loadRecentlyDeletedTasks()
         if tasks.isEmpty {
@@ -42,11 +51,13 @@ class TaskManager: ObservableObject {
     
     func addTask(title: String, description: String?, dueDate: Date?, hasTime: Bool, priority: Priority) {
         let newTask = Task(title: title, description: description, dueDate: dueDate, dueDateHasTime: hasTime, priority: priority)
+        ensureCompletionConsistency(for: newTask)
         tasks.append(newTask)
     }
 
     func updateTask(_ task: Task) {
         guard let index = tasks.firstIndex(where: { $0.id == task.id }) else { return }
+        ensureCompletionConsistency(for: task)
         tasks[index] = task
     }
     
@@ -78,7 +89,11 @@ class TaskManager: ObservableObject {
             let actualTask = self.tasks[index]
             
             // Directly modify the task properties to trigger @Published
+            let wasCompleted = actualTask.completed
             actualTask.completed.toggle()
+            if !wasCompleted, actualTask.completed {
+                self.awardLuck()
+            }
             
             // Also update subtasks if the parent task is marked as complete
             if actualTask.completed {
@@ -117,6 +132,7 @@ class TaskManager: ObservableObject {
         if allSubtasksCompleted && !actualTask.completed {
             // Complete the parent task
             actualTask.completed = true
+            awardLuck()
         } else if !allSubtasksCompleted && actualTask.completed {
             // If not all subtasks are completed but parent is, uncomplete the parent
             actualTask.completed = false
@@ -174,8 +190,36 @@ class TaskManager: ObservableObject {
     
     var averageProgress: Double {
         guard !tasks.isEmpty else { return 0 }
+        
+        // Use a more robust average calculation.
+        // If there are any incomplete tasks, the total average should naturally stay below 1.0
+        // because each incomplete task contributes at most 0.99 to the sum.
         let totalProgress = tasks.reduce(0) { $0 + $1.progress }
-        return totalProgress / Double(tasks.count)
+        let average = totalProgress / Double(tasks.count)
+        
+        // Final safety check: if not all tasks are completed, average cannot be 1.0
+        let allCompleted = tasks.allSatisfy { $0.completed }
+        if !allCompleted && average >= 1.0 {
+            return 0.99
+        }
+        
+        return average
+    }
+
+    /// Ensures that if all subtasks are completed, the parent task is also marked as completed.
+    func ensureCompletionConsistency(for task: Task) {
+        if !task.subtasks.isEmpty && task.subtasks.allSatisfy({ $0.completed }) && !task.completed {
+            task.completed = true
+            awardLuck()
+            
+            // Trigger notifications
+            task.objectWillChange.send()
+            self.objectWillChange.send()
+        }
+    }
+
+    private func awardLuck() {
+        luckValue += 1
     }
 
     func syncDueSoonNotifications() {

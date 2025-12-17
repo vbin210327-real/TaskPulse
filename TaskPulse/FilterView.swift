@@ -56,17 +56,17 @@ struct FilterView: View {
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 24) {
                         // Priority Section
-                        filterSection(title: "优先级", subtitle: "Priority") {
+                        filterSection(title: "优先级") {
                             priorityOptions
                         }
 
                         // Status Section
-                        filterSection(title: "状态", subtitle: "Status") {
+                        filterSection(title: "状态") {
                             statusOptions
                         }
 
                         // Date Range Section
-                        filterSection(title: "截止日期范围", subtitle: "Due Date Range") {
+                        filterSection(title: "截止日期范围") {
                             dateRangeOptions
                         }
 
@@ -110,18 +110,12 @@ struct FilterView: View {
     }
 
     // MARK: - Filter Section Container
-    private func filterSection<Content: View>(title: String, subtitle: String, @ViewBuilder content: () -> Content) -> some View {
+    private func filterSection<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(.cosmicHeadline)
                     .foregroundColor(.cosmicTextPrimary)
-
-                Text(subtitle)
-                    .font(.cosmicCaption2)
-                    .foregroundColor(.cosmicTextMuted)
-                    .textCase(.uppercase)
-                    .tracking(1)
             }
 
             content()

@@ -30,6 +30,8 @@ extension Color {
     static let pulseDanger = Color(red: 0.98, green: 0.35, blue: 0.42)
     static let pulseWarning = Color(red: 1.0, green: 0.78, blue: 0.28)
     static let pulseInfo = Color(red: 0.35, green: 0.68, blue: 0.98)
+    static let pulseIndigo = Color(red: 0.45, green: 0.35, blue: 0.95)
+    static let pulseIndigoDim = Color(red: 0.35, green: 0.25, blue: 0.75)
 
     // Text colors
     static let cosmicTextPrimary = Color(red: 0.95, green: 0.96, blue: 0.98)
@@ -173,18 +175,28 @@ struct CosmicButtonStyle: ButtonStyle {
 struct CosmicCard: ViewModifier {
     var padding: CGFloat = 16
     var cornerRadius: CGFloat = 20
+    var clipsContent: Bool = false
 
     func body(content: Content) -> some View {
-        content
+        let card = content
             .padding(padding)
             .background(GlassBackground(cornerRadius: cornerRadius))
-            .shadow(color: Color.black.opacity(0.4), radius: 12, x: 0, y: 6)
+
+        Group {
+            if clipsContent {
+                card
+                    .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+            } else {
+                card
+            }
+        }
+        .shadow(color: Color.black.opacity(0.4), radius: 12, x: 0, y: 6)
     }
 }
 
 extension View {
-    func cosmicCard(padding: CGFloat = 16, cornerRadius: CGFloat = 20) -> some View {
-        modifier(CosmicCard(padding: padding, cornerRadius: cornerRadius))
+    func cosmicCard(padding: CGFloat = 16, cornerRadius: CGFloat = 20, clipsContent: Bool = false) -> some View {
+        modifier(CosmicCard(padding: padding, cornerRadius: cornerRadius, clipsContent: clipsContent))
     }
 }
 
