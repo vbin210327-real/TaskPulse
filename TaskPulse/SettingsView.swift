@@ -31,7 +31,6 @@ struct SettingsView: View {
                         settingsSection(title: "视觉效果", icon: "sparkles") {
                             SettingsToggleRow(
                                 title: "完成任务特效",
-                                subtitle: "任务完成时显示激光切割动画",
                                 icon: "bolt.fill",
                                 color: .electricCyan,
                                 isOn: $enableCompletionEffect
@@ -42,7 +41,6 @@ struct SettingsView: View {
                         settingsSection(title: "通知", icon: "bell.badge.fill") {
                             SettingsToggleRow(
                                 title: "即将逾期提醒",
-                                subtitle: "任务接近截止时发送通知",
                                 icon: "bell.fill",
                                 color: .cosmicAmber,
                                 isOn: $enableDueSoonNotifications
@@ -54,7 +52,6 @@ struct SettingsView: View {
                             NavigationLink(destination: RecentlyDeletedView()) {
                                 SettingsNavigationRow(
                                     title: "最近删除",
-                                    subtitle: "恢复已删除的任务",
                                     icon: "trash.fill",
                                     color: .pulseDanger
                                 )
@@ -173,7 +170,6 @@ struct SettingsView: View {
 // MARK: - Settings Toggle Row
 struct SettingsToggleRow: View {
     let title: String
-    let subtitle: String
     let icon: String
     let color: Color
     @Binding var isOn: Bool
@@ -193,10 +189,6 @@ struct SettingsToggleRow: View {
                 Text(title)
                     .font(.cosmicSubheadline)
                     .foregroundColor(.cosmicTextPrimary)
-
-                Text(subtitle)
-                    .font(.cosmicCaption2)
-                    .foregroundColor(.cosmicTextMuted)
             }
 
             Spacer()
@@ -215,7 +207,6 @@ struct SettingsToggleRow: View {
 // MARK: - Settings Navigation Row
 struct SettingsNavigationRow: View {
     let title: String
-    let subtitle: String
     let icon: String
     let color: Color
 
@@ -234,10 +225,6 @@ struct SettingsNavigationRow: View {
                 Text(title)
                     .font(.cosmicSubheadline)
                     .foregroundColor(.cosmicTextPrimary)
-
-                Text(subtitle)
-                    .font(.cosmicCaption2)
-                    .foregroundColor(.cosmicTextMuted)
             }
 
             Spacer()
