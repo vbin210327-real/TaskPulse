@@ -16,8 +16,6 @@ struct CompletionEffect: View {
     var onCompletion: () -> Void
 
     // Animation states
-    @State private var showLaser = false
-    @State private var laserPathProgress: CGFloat = 0.0
     @State private var cardPiecesFlyOff = false
     @State private var congratulatoryTextVisible = false
     @State private var particlesVisible = false
@@ -65,28 +63,12 @@ struct CompletionEffect: View {
                                     anchor: .center
                                 )
                                 .opacity(cardPiecesFlyOff ? 0 : 1)
-
-                            // The laser beam with cosmic glow
-                            LaserPath()
-                                .trim(from: 0, to: laserPathProgress)
-                                .stroke(
-                                    LinearGradient(
-                                        colors: [.electricCyan, .white, .cosmicLavender],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    ),
-                                    style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round)
-                                )
-                                .shadow(color: .electricCyan, radius: 12, x: 0, y: 0)
-                                .shadow(color: .white, radius: 6, x: 0, y: 0)
-                                .shadow(color: .electricCyan.opacity(0.5), radius: 20, x: 0, y: 0)
-                                .opacity(showLaser ? 1 : 0)
                         }
                     }
                     .padding(.horizontal, 40)
                     .aspectRatio(1.5, contentMode: .fit)
 
-                    // Congratulatory message
+                    // Congratulatory message...
                     if congratulatoryTextVisible {
                         VStack(spacing: 16) {
                             Text("🎉")
@@ -131,38 +113,30 @@ struct CompletionEffect: View {
     private func runAnimationSequence() {
         Haptics.prepare()
 
-        // 0. Show particles
+        // 1. First, show the static card and some subtle background particles
         withAnimation(.easeIn(duration: 0.3)) {
             particlesVisible = true
         }
 
-        // 1. Show the laser and animate its path across the card
-        Haptics.impact(.light)
-        withAnimation(.linear(duration: 0.5)) {
-            showLaser = true
-            laserPathProgress = 1.0
-        }
-
-        // 2. A moment after the laser starts, make the pieces fly apart and show the text
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-            Haptics.notification(.success)
-            withAnimation(.easeOut(duration: 1.2)) {
+        // 2. Wait for exactly 0.5s - the perfect "registration" pause
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            // 3. Now start the self-breakup
+            Haptics.impact(.medium)
+            withAnimation(.easeOut(duration: 2.2)) {
                 cardPiecesFlyOff = true
             }
-            withAnimation(.spring(response: 0.6, dampingFraction: 0.6, blendDuration: 1.0)) {
-                congratulatoryTextVisible = true
+
+            // 4. Burst the message out almost immediately (0.15s delay)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                Haptics.notification(.success)
+                withAnimation(.spring(response: 0.8, dampingFraction: 0.65, blendDuration: 1.0)) {
+                    congratulatoryTextVisible = true
+                }
             }
         }
 
-        // 3. Hide the laser after it has crossed the card
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-            withAnimation {
-                showLaser = false
-            }
-        }
-
-        // 4. After the animation is complete, dismiss the effect view and notify the parent
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+        // 5. Final dismissal
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.8) {
             withAnimation {
                 onCompletion()
                 taskToAnimate = nil
@@ -270,16 +244,6 @@ struct ParticleView: View {
                     )
                 }
             }
-    }
-}
-
-// Shape for the laser's path (a diagonal line)
-struct LaserPath: Shape {
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        path.move(to: CGPoint(x: rect.minX, y: rect.minY))
-        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
-        return path
     }
 }
 

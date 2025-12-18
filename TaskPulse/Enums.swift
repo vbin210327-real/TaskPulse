@@ -5,7 +5,7 @@
 
 import Foundation
 
-enum Priority: String, Codable, CaseIterable {
+enum Priority: String, Codable, CaseIterable, Comparable {
     case high = "高"
     case medium = "中"
     case low = "低"
@@ -13,11 +13,15 @@ enum Priority: String, Codable, CaseIterable {
     var sortOrder: Int {
         switch self {
         case .high:
-            return 2
+            return 3
         case .medium:
-            return 1
+            return 2
         case .low:
-            return 0
+            return 1
         }
     }
-} 
+    
+    static func < (lhs: Priority, rhs: Priority) -> Bool {
+        return lhs.sortOrder < rhs.sortOrder
+    }
+}

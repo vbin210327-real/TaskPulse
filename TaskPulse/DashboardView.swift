@@ -141,7 +141,7 @@ struct DashboardView: View {
             }
             .padding(.horizontal, 4)
 
-            ForEach(Array(taskManager.tasks.filter { $0.isNearDue }.enumerated()), id: \.element.id) { index, task in
+            ForEach(Array(taskManager.tasks.filter { $0.isNearDue }.sorted(by: { $0.priority > $1.priority }).enumerated()), id: \.element.id) { index, task in
                 TaskCard(
                     task: task,
                     onEdit: nil,

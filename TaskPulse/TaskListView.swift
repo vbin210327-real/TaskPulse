@@ -73,7 +73,7 @@ struct TaskListView: View {
             tasksToFilter = tasksToFilter.filter { $0.isOverdue }
         }
 
-        return tasksToFilter
+        return tasksToFilter.sorted { $0.priority > $1.priority }
     }
 
     var body: some View {
@@ -108,12 +108,16 @@ struct TaskListView: View {
                         Text("添加")
                             .font(.cosmicCaption)
                     }
-                    .foregroundColor(.cosmicBlack)
+                    .foregroundColor(.white)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 8)
                     .background(
                         Capsule()
-                            .fill(Color.electricCyan)
+                            .fill(Color.cosmicBlack)
+                            .overlay(
+                                Capsule()
+                                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                            )
                     )
                 }
             }
@@ -326,12 +330,16 @@ struct TaskListView: View {
                         Text("创建任务")
                     }
                     .font(.cosmicHeadline)
-                    .foregroundColor(.cosmicBlack)
+                    .foregroundColor(.white)
                     .padding(.horizontal, 24)
                     .padding(.vertical, 14)
                     .background(
                         Capsule()
-                            .fill(Color.electricCyan)
+                            .fill(Color.cosmicBlack)
+                            .overlay(
+                                Capsule()
+                                    .stroke(Color.white.opacity(0.15), lineWidth: 1.5)
+                            )
                     )
                 }
                 .padding(.top, 8)
